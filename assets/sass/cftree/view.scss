@@ -472,7 +472,7 @@ div.fancytree-drag-helper span.fancytree-childcounter {
 }
 
 #assocViewTable {
-    // max-width: 1000px;
+    max-width: 1000px;
 }
 
 #assocViewTable_filter [type=search] {
@@ -481,7 +481,7 @@ div.fancytree-drag-helper span.fancytree-childcounter {
 }
 
 .assocViewTitle {
-    max-width:400px;
+    max-width:800px;
     height: 19px;
     text-overflow: ellipsis;
     white-space: nowrap;
