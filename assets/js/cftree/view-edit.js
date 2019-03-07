@@ -587,7 +587,7 @@ apx.edit.prepareExemplarModal = function() {
 apx.edit.prepareAssociateModal = function() {
     // add an option for each association type to the associationFormType select
     for (let i = 0; i < apx.assocTypes.length; ++i) {
-        if (apx.assocTypes[i] !== "Exemplar" && apx.assocTypes[i] !== "Is Child Of") {
+        if (apx.assocTypes[i] !== "Exemplar") {
             $("#associationFormType").append('<option value="' + apx.assocTypes[i] + '">' + apx.assocTypes[i] + '</option>');
         }
     }
