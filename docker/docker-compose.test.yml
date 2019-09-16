@@ -4,7 +4,7 @@ services:
     image: opensalt/app:${COMMIT}
 
   phpfpm:
-    image: opensalt/php:7.2-fpm
+    image: opensalt/php:7.3-fpm
     depends_on:
       - db
     environment:
@@ -41,7 +41,6 @@ services:
       MAILER_AUTH_MODE:
       MAILER_PORT:
       COMMENTS_FEATURE:
-      VISUALIZATION_FEATURE:
       COMMENT_ATTACHMENTS:
       CREATE_ACCOUNT_FEATURE:
       USE_MAIL_FEATURE:
@@ -56,12 +55,16 @@ services:
       ATTACHMENT_URL_PREFIX:
       BUCKET_PROVIDER:
       LOCAL_FILESYSTEM_PATH:
+      CASE_NETWORK_CLIENT_ID:
+      CASE_NETWORK_CLIENT_SECRET:
+      CASE_NETWORK_TOKEN_ENDPOINT:
+      CASE_NETWORK_SCOPE:
     volumes_from:
       - app
     working_dir: /var/www/html
 
   nginx:
-    image: opensalt/nginx:1.15-alpine
+    image: opensalt/nginx:1.16-alpine
     depends_on:
       - phpfpm
     environment:

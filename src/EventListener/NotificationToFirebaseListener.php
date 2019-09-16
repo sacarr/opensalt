@@ -5,9 +5,9 @@ namespace App\EventListener;
 use App\Event\NotificationEvent;
 use Kreait\Firebase;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpKernel\Event\TerminateEvent;
 
 /**
  * Firebase data structure
@@ -54,7 +54,7 @@ class NotificationToFirebaseListener implements EventSubscriberInterface
         $this->firebasePrefix = !empty($firebasePrefix) ? $firebasePrefix : 'opensalt';
     }
 
-    public static function getSubscribedEvents()
+    public static function getSubscribedEvents(): array
     {
         return [NotificationEvent::class => 'handleNotification'];
     }
@@ -84,7 +84,7 @@ class NotificationToFirebaseListener implements EventSubscriberInterface
         // Send the notification after the response is sent
         $dispatcher->addListener(
             'kernel.terminate',
-            function (Event $event) use ($notification, $docId) {
+            function (TerminateEvent $event) use ($notification, $docId) {
                 $this->addDocChangeToFirebase($notification, $docId);
             },
             10
@@ -95,7 +95,7 @@ class NotificationToFirebaseListener implements EventSubscriberInterface
             if (1 === random_int(1, 100)) {
                 $dispatcher->addListener(
                     'kernel.terminate',
-                    function (Event $event) {
+                    function (TerminateEvent $event) {
                         $this->cleanupOldNotifications();
                     },
                     -10
