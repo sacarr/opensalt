@@ -104,3 +104,6 @@ pw-archive/
 !/var/SymfonyRequirements.php
 /vendor/
 ###< symfony/framework-bundle ###
+docker/docker-compose.dev.yml
+docker/docker-compose.dev.yml
+docker/docker-compose.dev.yml
