@@ -25,6 +25,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\Routing\Annotation\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Security;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\Form\FormInterface;
@@ -72,6 +73,7 @@ class LsItemController extends AbstractController
      *
      * @Route("/new/{doc}/{parent}", methods={"GET", "POST"}, name="lsitem_new")
      * @Route("/new/{doc}/{parent}/{assocGroup}", methods={"GET", "POST"}, name="lsitem_new_ag")
+     * @ParamConverter("parent", options={"exclude": {"parent"}})
      * @Template()
      * @Security("is_granted('add-standard-to', doc)")
      *

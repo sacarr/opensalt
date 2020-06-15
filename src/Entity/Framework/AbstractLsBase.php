@@ -63,7 +63,7 @@ class AbstractLsBase implements IdentifiableInterface
     /**
      * @var array
      *
-     * @ORM\Column(name="extra", type="json", nullable=true)
+     * @ORM\Column(name="extra", type="json", nullable=true,options={"jsonb"=true})
      *
      * @Serializer\Exclude()
      */

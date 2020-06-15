@@ -36,20 +36,31 @@ class DateTimeType extends \Doctrine\DBAL\Types\DateTimeType
      */
     public function convertToPHPValue($value, AbstractPlatform $platform)
     {
+        $timeZone = new \DateTimeZone("+00");
+
         if (null === $value || $value instanceof \DateTime) {
             return $value;
         }
 
         $format = $platform->getDateTimeFormatString();
-        if (preg_match('/\.\d+$/', $value)) {
+
+        if (preg_match('/\.\d+(\z|\+|-)/', $value)) {
             $format .= '.u';
         }
 
-        $val = \DateTime::createFromFormat($format, $value);
+        if ($platform->getName() == 'postgresql') {
+            if( preg_match('/-\d+\z|\+\d+\z/', $value, $timeZonePart, PREG_OFFSET_CAPTURE) ){
+                if (count($timeZonePart) === 1) {
+                    $value = substr($value, 0, $timeZonePart[0][1]);
+                    $timeZone = new \DateTimeZone($timeZonePart[0][0]);
+                }
+            }
+        }
+
+        $val = \DateTime::createFromFormat($format, $value, $timeZone);
         if (!$val) {
             throw ConversionException::conversionFailedFormat($value, $this->getName(), $platform->getDateTimeFormatString().'.u');
         }
-
         return $val;
     }
 

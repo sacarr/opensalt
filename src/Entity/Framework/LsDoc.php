@@ -241,8 +241,6 @@ class LsDoc extends AbstractLsBase implements CaseApiInterface, LockableInterfac
      *
      * @ORM\Column(name="status_start", type="date", nullable=true)
      *
-     * @Assert\Date()
-     *
      * @Serializer\Expose()
      * @Serializer\SerializedName("statusStartDate")
      * @Serializer\Type("DateTime<'Y-m-d'>")
@@ -253,8 +251,6 @@ class LsDoc extends AbstractLsBase implements CaseApiInterface, LockableInterfac
      * @var \DateTimeInterface|null
      *
      * @ORM\Column(name="status_end", type="date", nullable=true)
-     *
-     * @Assert\Date()
      *
      * @Serializer\Expose()
      * @Serializer\SerializedName("statusEndDate")

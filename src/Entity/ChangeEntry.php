@@ -58,7 +58,7 @@ class ChangeEntry
     /**
      * @var array
      *
-     * @ORM\Column(name="changed", type="json", nullable=true)
+     * @ORM\Column(name="changed", type="json", nullable=true,options={"jsonb"=true})
      */
     protected $changed = [];
 

@@ -86,7 +86,7 @@ class User implements UserInterface, \Serializable, EquatableInterface
     /**
      * @var string[]
      *
-     * @ORM\Column(name="roles", type="json_array", nullable=true)
+     * @ORM\Column(name="roles", type="json_array", nullable=true, options={"jsonb"=true})
      */
     protected $roles = [];
 

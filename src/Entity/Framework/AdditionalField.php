@@ -20,7 +20,7 @@ class AdditionalField
 {
     /**
      * @ORM\Id()
-     * @ORM\GeneratedValue()
+     * @ORM\GeneratedValue(strategy="AUTO")
      * @ORM\Column(type="integer")
      */
     private ?int $id = null;
@@ -57,7 +57,7 @@ class AdditionalField
     private ?string $type = null;
 
     /**
-     * @ORM\Column(type="json", nullable=true)
+     * @ORM\Column(type="json", nullable=true,options={"jsonb"=true})
      */
     private ?array $typeInfo = null;
 
