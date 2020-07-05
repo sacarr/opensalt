@@ -15,6 +15,11 @@ class Version20160922203010 extends AbstractMigration
      */
     public function up(Schema $schema): void
     {
+      if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+        $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+        return;
+    }
+
         // Migrate the educational_alignment column to use a standard set
         // HS -> '09,10,11,12'
         // http://purl.org/ASN/.../K-12,Pre-K -> 'KG', '01'..'12', 'PK'
@@ -100,6 +105,11 @@ UPDATE ls_item
      */
     public function down(Schema $schema): void
     {
+      if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+        $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+        return;
+    }
+
         $this->abortIf(true, 'Cannot reverse educational alignment change');
     }
 }

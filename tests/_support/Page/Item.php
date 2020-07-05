@@ -168,6 +168,7 @@ class Item implements Context
     public function iShouldNotSeeTheDeletedItem()
     {
         $I = $this->I;
+        $I->waitForElementNotVisible('#modalSpinner', 120);
 
         // The name may be still shown in a notification, restrict to tree
         $I->dontSee($this->itemData['humanCodingScheme'], '#tree1Section');

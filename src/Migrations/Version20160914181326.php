@@ -16,6 +16,11 @@ class Version20160914181326 extends AbstractMigration
      */
     public function up(Schema $schema): void
     {
+      if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+        $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+        return;
+    }
+
         $isGradeLevels = LsDocAttribute::IS_GRADE_LEVELS;
 
         $this->addSql("
@@ -32,6 +37,11 @@ VALUES
      */
     public function down(Schema $schema): void
     {
+      if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+        $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+        return;
+    }
+
         // Ignore on downgrade
     }
 }

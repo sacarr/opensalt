@@ -15,6 +15,11 @@ class Version20160927144534 extends AbstractMigration
      */
     public function up(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
         $this->addSql('ALTER TABLE ls_item ADD item_type_id INT DEFAULT NULL AFTER `type`');
@@ -27,6 +32,11 @@ class Version20160927144534 extends AbstractMigration
      */
     public function down(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
         $this->addSql('ALTER TABLE ls_item DROP FOREIGN KEY FK_D8D02498CE11AAC7');

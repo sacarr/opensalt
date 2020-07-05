@@ -16,6 +16,11 @@ final class Version20190530232540 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
         $this->addSql('ALTER TABLE salt_user CHANGE password password VARCHAR(255) DEFAULT NULL');
@@ -24,6 +29,11 @@ final class Version20190530232540 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
         $this->addSql('ALTER TABLE audit_salt_user CHANGE password password VARCHAR(64) DEFAULT NULL COLLATE utf8mb4_unicode_ci');

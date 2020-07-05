@@ -5,8 +5,29 @@ ARG APCU_VERSION=5.1.18
 ARG APCU_BC_VERSION=1.0.5
 
 ENV DEBIAN_FRONTEND noninteractive
-
 ENV DOCKERIZE_VERSION v0.6.1
+
+# Some corporate partners may use a service to monitor encrypted network traffic.  When
+# this is the case, add the intermediary's certificate to the container's trust authority
+# for the duration of the build so that PHP Community Extensions may be uploaded
+COPY ./firewall.crt /tmp/firewall.crt
+
+# Add tools to install PHP extensions
+ADD https://raw.githubusercontent.com/mlocati/docker-php-extension-installer/master/install-php-extensions /usr/local/bin/
+
+# Copy intermediary's certificates to /usr/share/ca-certificates, then add to
+# the ca-certificates.conf file and update-ca-certificates
+RUN	apt-get -o 'Acquire::CompressionTypes::Order::="gz"' update \
+	&& cp /tmp/firewall.crt /usr/share/ca-certificates/firewall.crt \
+	&& cp /etc/ca-certificates.conf /etc/ca-certifcates.conf.0 \
+	&& echo firewall.crt >>/etc/ca-certificates.conf \
+	&& /usr/sbin/update-ca-certificates \
+	&& rm /tmp/firewall.crt
+
+# Install, enable and configure Postgres extension and PDO_pgsql
+RUN chmod uga+x /usr/local/bin/install-php-extensions \
+	&& sync \
+    && install-php-extensions pdo_pgsql pgsql
 
 # add extensions
 RUN	apt-get -o 'Acquire::CompressionTypes::Order::="gz"' update \
@@ -21,7 +42,19 @@ RUN	apt-get -o 'Acquire::CompressionTypes::Order::="gz"' update \
 	  curl \
 	  wget \
 	  git \
-	&& docker-php-ext-install -j$(nproc) \
+	  gnupg2
+
+# Add the Postgres client
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt buster-pgdg main" >/etc/apt/sources.list.d/pgdg.list \
+	&& wget --quiet --no-check-certificate -O /tmp/postges_key.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+	&& apt-key add /tmp/postges_key.asc \
+	&& rm /tmp/postges_key.asc \
+	&& apt-get -o 'Acquire::CompressionTypes::Order::="gz"' update \
+	&& apt-get install -y --no-install-recommends postgresql-client \
+	&& apt-get -o 'Acquire::CompressionTypes::Order::="gz"' update
+
+# Install PHP extensions
+RUN docker-php-ext-install -j$(nproc) \
 	  bz2 \
 	  gd \
 	  zip \
@@ -63,7 +96,7 @@ COPY \
         /usr/local/etc/php/conf.d/
 
 # Install symfony-cli
-RUN wget https://get.symfony.com/cli/installer -O - | bash \
+RUN wget --no-check-certificate https://get.symfony.com/cli/installer -O - | bash \
     && mv ~/.symfony/bin/symfony /usr/local/bin/symfony
 
 # Install and configure composer
@@ -82,3 +115,11 @@ RUN composer global require \
             --prefer-dist --no-progress --no-suggest --classmap-authoritative \
         && composer clear-cache \
 	&& chmod -R a+w ${COMPOSER_HOME}
+
+# Remove intermediary's certificate from the container's trust authority
+RUN rm /usr/share/ca-certificates/firewall.crt \
+	&& rm /etc/ca-certificates.conf \
+	&& mv /etc/ca-certifcates.conf.0 /etc/ca-certificates.conf \
+	&& /usr/sbin/update-ca-certificates
+
+

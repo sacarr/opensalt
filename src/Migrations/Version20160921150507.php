@@ -17,6 +17,11 @@ class Version20160921150507 extends AbstractMigration
      */
     public function up(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
         $this->addSql('CREATE TABLE ls_def_licence (id INT AUTO_INCREMENT NOT NULL, identifier VARCHAR(300) DEFAULT NULL, uri VARCHAR(300) DEFAULT NULL, extra json DEFAULT NULL COMMENT \'(DC2Type:json)\', updated_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL, title VARCHAR(255) DEFAULT NULL, description LONGTEXT DEFAULT NULL, licence_text LONGTEXT NOT NULL, PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE = InnoDB');
@@ -34,6 +39,11 @@ class Version20160921150507 extends AbstractMigration
      */
     public function down(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
         $this->addSql('DROP TABLE ls_def_licence');

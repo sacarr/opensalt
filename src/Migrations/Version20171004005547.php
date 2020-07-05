@@ -12,6 +12,11 @@ class Version20171004005547 extends AbstractMigration
      */
     public function up(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
         $dbParams = $this->connection->getParams();
@@ -62,6 +67,11 @@ ALTER DATABASE {$dbName} CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
      */
     public function down(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
         $dbParams = $this->connection->getParams();

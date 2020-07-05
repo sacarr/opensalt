@@ -15,6 +15,11 @@ class Version20170510163859 extends AbstractMigration
      */
     public function up(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->abortIf($this->connection->getDatabasePlatform()->getName() != 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
         $this->addSql('CREATE TABLE import_logs (
@@ -34,6 +39,11 @@ class Version20170510163859 extends AbstractMigration
      */
     public function down(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->addSql('DROP TABLE import_logs');
 
     }

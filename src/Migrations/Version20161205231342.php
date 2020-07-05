@@ -15,6 +15,11 @@ class Version20161205231342 extends AbstractMigration
      */
     public function up(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->abortIf($this->connection->getDatabasePlatform()->getName() != 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
         $this->addSql('CREATE TABLE salt_user_doc_acl (user_id INT NOT NULL, doc_id INT NOT NULL, access SMALLINT NOT NULL, INDEX IDX_85C83E4AA76ED395 (user_id), INDEX IDX_85C83E4A895648BC (doc_id), PRIMARY KEY(user_id, doc_id)) DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE = InnoDB');
@@ -27,6 +32,11 @@ class Version20161205231342 extends AbstractMigration
      */
     public function down(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->abortIf($this->connection->getDatabasePlatform()->getName() != 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
         $this->addSql('DROP TABLE salt_user_doc_acl');

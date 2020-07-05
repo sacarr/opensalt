@@ -11,6 +11,11 @@ class Version20180108162841 extends AbstractMigration
 {
     public function up(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+                $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+                return;
+        }
+        
         $this->addSql('
 CREATE TEMPORARY TABLE audit_doc
 (rev INT AUTO_INCREMENT NOT NULL, doc_id INT DEFAULT NULL, PRIMARY KEY (rev), UNIQUE INDEX (doc_id));
@@ -156,6 +161,11 @@ FROM salt_user_doc_acl;
 
     public function down(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+                $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+                return;
+        }
+   
         $this->addSql('
 TRUNCATE audit_ls_doc;
 TRUNCATE audit_rubric;

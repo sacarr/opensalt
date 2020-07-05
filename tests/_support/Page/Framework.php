@@ -873,6 +873,7 @@ class Framework implements Context
     public function iShouldSeeFramework(): void
     {
         $I = $this->I;
+        $I->waitForElementNotVisible('#modalSpinner', 120);
 
         $I->waitForElementVisible('.itemTitleSpan');
 

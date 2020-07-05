@@ -12,6 +12,11 @@ class Version20180201165909 extends AbstractMigration
 {
     public function up(Schema $schema): void
     {
+      if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+        $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+        return;
+    }
+
         $sql = <<<'xENDx'
 INSERT IGNORE INTO ls_def_licence
   (identifier, uri, title, licence_text, description, updated_at)
@@ -42,6 +47,11 @@ xENDx;
 
     public function down(Schema $schema): void
     {
+      if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+        $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+        return;
+      }
+
         $this->addSql('DELETE IGNORE FROM ls_def_licence WHERE title = "Attribution 4.0 International" AND licence_text = "https://creativecommons.org/licenses/by/4.0/legalcode"');
     }
 }

@@ -16,6 +16,11 @@ final class Version20191108173538 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
         $this->addSql('CREATE TABLE mirror_oauth (id INT AUTO_INCREMENT NOT NULL, endpoint VARCHAR(255) NOT NULL, auth_key VARCHAR(255) NOT NULL, auth_secret VARCHAR(255) NOT NULL, updated_at DATETIME(6) NOT NULL COMMENT \'(DC2Type:datetime)\', PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
@@ -33,6 +38,11 @@ final class Version20191108173538 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
 
         $this->addSql('ALTER TABLE mirror_server DROP FOREIGN KEY FK_F43F213F41E8B2E5');

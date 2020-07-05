@@ -4,12 +4,14 @@ imports:
     - { resource: 'pdo-options.php' }
 
 parameters:
-    # Defaults for environment variables
-    env(MYSQL_HOST): null
-    env(MYSQL_PORT): '3306'
-    env(MYSQL_DATABASE): null
-    env(MYSQL_USER): null
-    env(MYSQL_PASSWORD): null
+    #Defaults for environment variables
+    env(DATABASE_BRAND): null
+    env(DATABASE_HOST): null
+    env(DATABASE_PORT): null
+    env(DATABASE_NAME): null
+    env(DATABASE_USER): null
+    env(DATABASE_PASSWORD): null
+    env(DATABASE_FILTER): null
     env(MAILER_TRANSPORT): smtp
     env(MAILER_HOST): '127.0.0.1'
     env(MAILER_USER): null
@@ -55,11 +57,13 @@ parameters:
     env(CASE_NETWORK_SCOPE): 'http://purl.imsglobal.org/casenetwork/case/v1p0/scope/all.readonly'
 
     locale: en
-    database_host: '%env(MYSQL_HOST)%'
-    database_port: '%env(int:MYSQL_PORT)%'
-    database_name: '%env(MYSQL_DATABASE)%'
-    database_user: '%env(MYSQL_USER)%'
-    database_password: '%env(MYSQL_PASSWORD)%'
+    database_brand: '%env(DATABASE_BRAND)%'
+    database_host: '%env(DATABASE_HOST)%'
+    database_port: '%env(DATABASE_PORT)%'
+    database_name:   '%env(DATABASE_NAME)%'
+    database_user: '%env(DATABASE_USER)%'
+    database_password: '%env(DATABASE_PASSWORD)%'
+    database_filter: '%env(DATABASE_FILTER)%'
     mailer_transport: '%env(MAILER_TRANSPORT)%'
     mailer_host: '%env(MAILER_HOST)%'
     mailer_user: '%env(MAILER_USER)%'
@@ -224,7 +228,7 @@ services:
     session.handler.pdo:
         class:     Symfony\Component\HttpFoundation\Session\Storage\Handler\PdoSessionHandler
         arguments:
-            $pdoOrDsn: 'mysql:host=%database_host%;port=%database_port%;dbname=%database_name%'
+            $pdoOrDsn: '%database_brand%:dbname=%database_name%;user=%database_user%;password=%database_password%;host=%database_host%;port=%database_port%'
             $options: { db_username: '%database_user%', db_password: '%database_password%', db_table: 'auth_session', db_id_col: 'id', db_connection_options: "%pdo_options%" }
 
     salt.cache.external_docs:

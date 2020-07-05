@@ -16,6 +16,11 @@ class Version20160928191216 extends AbstractMigration
      */
     public function up(Schema $schema): void
     {
+      if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+        $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+        return;
+      }
+
         $sql = <<<'xENDx'
 SELECT d.id, d.subject, d.subject_uri
   FROM ls_doc d
@@ -89,6 +94,11 @@ xENDx;
      */
     public function down(Schema $schema): void
     {
+      if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+        $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+        return;
+      }
+
         $this->abortIf(true, 'Cannot revert');
     }
 }

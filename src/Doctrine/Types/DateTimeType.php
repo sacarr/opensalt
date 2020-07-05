@@ -48,7 +48,7 @@ class DateTimeType extends \Doctrine\DBAL\Types\DateTimeType
             $format .= '.u';
         }
 
-        if ($platform->getName() == 'postgresql') {
+        if (  'postgresql' === $platform->getName() ) {
             if( preg_match('/-\d+\z|\+\d+\z/', $value, $timeZonePart, PREG_OFFSET_CAPTURE) ){
                 if (count($timeZonePart) === 1) {
                     $value = substr($value, 0, $timeZonePart[0][1]);

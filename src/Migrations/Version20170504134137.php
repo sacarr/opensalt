@@ -16,6 +16,11 @@ class Version20170504134137 extends AbstractMigration
      */
     public function up(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $cacheAdapter = new PdoAdapter($this->connection);
 
         $cacheAdapter->createTable();
@@ -28,6 +33,11 @@ class Version20170504134137 extends AbstractMigration
      */
     public function down(Schema $schema): void
     {
+        if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
+            $this->addSql("SELECT 'Postgres migration skipped.  Postgres database is container-initialized'");
+            return;
+        }
+
         $this->addSql('DROP TABLE cache_items');
     }
 }

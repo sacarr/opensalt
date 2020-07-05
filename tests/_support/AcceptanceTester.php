@@ -2,7 +2,6 @@
 
 use Behat\Behat\Context\Context;
 use Facebook\WebDriver\WebDriverElement;
-
 /**
  * Inherited Methods.
  *
@@ -21,6 +20,7 @@ use Facebook\WebDriver\WebDriverElement;
  */
 class AcceptanceTester extends \Codeception\Actor implements Context
 {
+//    use \Codeception\Lib\Actor\Shared\Friend;
     use _generated\AcceptanceTesterActions;
 
     protected static $documentsApi = '/ims/case/v1p0/CFDocuments?sort=updatedAt&orderBy=DESC&limit=1000';
