@@ -5,9 +5,6 @@ namespace DoctrineMigrations;
 use Doctrine\Migrations\AbstractMigration;
 use Doctrine\DBAL\Schema\Schema;
 
-/**
- * Auto-generated Migration: Please modify to your needs!
- */
 class Version20170911215839 extends AbstractMigration
 {
     /**
@@ -21,6 +18,7 @@ class Version20170911215839 extends AbstractMigration
         }
 
         $this->addSql("SELECT 'Merged into previous migration'");
+        // Merged into previous migration
     }
 
     /**
@@ -34,5 +32,6 @@ class Version20170911215839 extends AbstractMigration
         }
 
         $this->addSql("SELECT 'Merged into previous migration'");
+        // Merged into previous migration
     }
 }

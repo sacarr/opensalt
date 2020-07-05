@@ -6,9 +6,6 @@ use Doctrine\Migrations\AbstractMigration;
 use Doctrine\DBAL\Schema\Schema;
 use Ramsey\Uuid\Uuid;
 
-/**
- * Auto-generated Migration: Please modify to your needs!
- */
 class Version20160928191216 extends AbstractMigration
 {
     /**
@@ -85,8 +82,6 @@ xENDx;
         }
 
         $this->connection->commit();
-
-        $this->addSql("SELECT 'Updated subjects'");
     }
 
     /**

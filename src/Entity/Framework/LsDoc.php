@@ -245,7 +245,7 @@ class LsDoc extends AbstractLsBase implements CaseApiInterface, LockableInterfac
      * @Serializer\SerializedName("statusStartDate")
      * @Serializer\Type("DateTime<'Y-m-d'>")
      */
-    private $statusStart;
+    private ?\DateTimeInterface $statusStart = null;
 
     /**
      * @var \DateTimeInterface|null
@@ -256,7 +256,7 @@ class LsDoc extends AbstractLsBase implements CaseApiInterface, LockableInterfac
      * @Serializer\SerializedName("statusEndDate")
      * @Serializer\Type("DateTime<'Y-m-d'>")
      */
-    private $statusEnd;
+    private ?\DateTimeInterface $statusEnd = null;
 
     /**
      * @var LsDefLicence|null
