@@ -6,12 +6,15 @@ imports:
 parameters:
     #Defaults for environment variables
     env(DATABASE_BRAND): null
-    env(DATABASE_HOST): null
-    env(DATABASE_PORT): null
-    env(DATABASE_NAME): null
-    env(DATABASE_USER): null
-    env(DATABASE_PASSWORD): null
+    env(DATABASE_CHARSET): null
+    env(DATABASE_COLLATE): null
     env(DATABASE_FILTER): null
+    env(DATABASE_HOST): null
+    env(DATABASE_NAME): null
+    env(DATABASE_PASSWORD): null
+    env(DATABASE_PORT): null
+    env(DATABASE_USER): null
+    env(DATABASE_VERSION): null
     env(MAILER_TRANSPORT): smtp
     env(MAILER_HOST): '127.0.0.1'
     env(MAILER_USER): null
@@ -58,12 +61,15 @@ parameters:
 
     locale: en
     database_brand: '%env(DATABASE_BRAND)%'
-    database_host: '%env(DATABASE_HOST)%'
-    database_port: '%env(DATABASE_PORT)%'
-    database_name:   '%env(DATABASE_NAME)%'
-    database_user: '%env(DATABASE_USER)%'
-    database_password: '%env(DATABASE_PASSWORD)%'
+    database_charset: '%env(DATABASE_CHARSET)%'
+    database_collate: '%env(DATABASE_COLLATE)%'
     database_filter: '%env(DATABASE_FILTER)%'
+    database_host: '%env(DATABASE_HOST)%'
+    database_name:   '%env(DATABASE_NAME)%'
+    database_port: '%env(DATABASE_PORT)%'
+    database_password: '%env(DATABASE_PASSWORD)%'
+    database_user: '%env(DATABASE_USER)%'
+    database_version: '%env(DATABASE_VERSION)%'
     mailer_transport: '%env(MAILER_TRANSPORT)%'
     mailer_host: '%env(MAILER_HOST)%'
     mailer_user: '%env(MAILER_USER)%'

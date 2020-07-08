@@ -17,7 +17,9 @@ class Version20170911215839 extends AbstractMigration
             return;
         }
 
-        $this->addSql("SELECT 'Merged into previous migration'");
+        $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
+
+        $this->addSql('-- "SELECT Merged into previous migration"');
         // Merged into previous migration
     }
 
@@ -31,7 +33,9 @@ class Version20170911215839 extends AbstractMigration
             return;
         }
 
-        $this->addSql("SELECT 'Merged into previous migration'");
+        $this->abortIf($this->connection->getDatabasePlatform()->getName() !== 'mysql', 'Migration can only be executed safely on \'mysql\'.');
+
+        $this->addSql('-- "SELECT Merged into previous migration"');
         // Merged into previous migration
     }
 }

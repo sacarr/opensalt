@@ -5,14 +5,21 @@ services:
   # so we set to command to /bin/true to exit right away
   phpcli:
     #build:
-    #  context: ./php
-    image: opensalt/php:7.4-fpm
+    #  context: ./php/fpm
+    image: opensalt/php:7.4-fpm_${DATABASE_DRIVER}
     environment:
       #XDEBUG_CONFIG: remote_host=Your_IP_Address
-      MYSQL_DATABASE:
-      MYSQL_USER:
-      MYSQL_PASSWORD:
-      MYSQL_HOST: "${MYSQL_HOST:-db}"
+      DATABASE_BRAND:
+      DATABASE_CHARSET:
+      DATABASE_COLLATE:
+      DATABASE_DRIVER:
+      DATABASE_FILTER:
+      DATABASE_HOST:
+      DATABASE_PASSWORD:
+      DATABASE_NAME:
+      DATABASE_PORT:
+      DATABASE_USER:
+      DATABASE_VERSION:
       DB_USE_RDS_CERT:
       APP_SECRET:
       COOKIE_SECRET:
@@ -70,12 +77,19 @@ services:
   composer:
     #build:
     #  context: ./composer
-    image: opensalt/php:7.4-fpm
+    image: opensalt/php:7.4-fpm_${DATABASE_DRIVER}
     environment:
-      MYSQL_DATABASE:
-      MYSQL_USER:
-      MYSQL_PASSWORD:
-      MYSQL_HOST: "${MYSQL_HOST:-db}"
+      DATABASE_BRAND:
+      DATABASE_CHARSET:
+      DATABASE_COLLATE:
+      DATABASE_DRIVER:
+      DATABASE_FILTER:
+      DATABASE_HOST:
+      DATABASE_PASSWORD:
+      DATABASE_NAME:
+      DATABASE_PORT:
+      DATABASE_USER:
+      DATABASE_VERSION:
       DB_USE_RDS_CERT:
     volumes:
       - *project_root

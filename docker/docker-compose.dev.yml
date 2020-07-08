@@ -11,18 +11,25 @@ services:
       LOG_FILE: /dev/stdout
 
   phpfpm:
-    #build:
-    #  context: ./php/fpm
-    image: opensalt/php:7.4-fpm
+    build:
+      context: ./php/fpm
+    image: opensalt/php:7.4-fpm_${DATABASE_DRIVER}
     #image: opensalt/php:7.4-fpm-xdebug
     depends_on:
       - db
     environment:
       #XDEBUG_CONFIG: remote_host=Your_IP_Address
-      MYSQL_DATABASE:
-      MYSQL_USER:
-      MYSQL_PASSWORD:
-      MYSQL_HOST: "${MYSQL_HOST:-db}"
+      DATABASE_BRAND:
+      DATABASE_CHARSET:
+      DATABASE_COLLATE:
+      DATABASE_DRIVER:
+      DATABASE_FILTER:
+      DATABASE_HOST:
+      DATABASE_PASSWORD:
+      DATABASE_NAME:
+      DATABASE_PORT:
+      DATABASE_USER:
+      DATABASE_VERSION:
       DB_USE_RDS_CERT:
       APP_SECRET:
       COOKIE_SECRET:
@@ -93,22 +100,28 @@ services:
           - "${COMPOSE_PROJECT_NAME}-salt"
 
   db:
-    image: percona:${MYSQL_VERSION}
+    build:
+      context: ./${CONTAINER_REPO}
+    image: opensalt/db:${CONTAINER_REPO}_${DATABASE_VERSION}
+    ports:
+      - "${DATABASE_PORT}:${DATABASE_PORT}"
     volumes:
       - "${PROJ_DIR:-..}/docker/data/mysql:/var/lib/mysql"
       - "${PROJ_DIR:-..}/docker/mysql/max_allowed_packet.cnf:/etc/mysql/conf.d/max_allowed_packet.cnf:ro"
       - "${PROJ_DIR:-..}/docker/mysql/charset.cnf:/etc/mysql/conf.d/charset.cnf:ro"
+      - "${PROJ_DIR:-..}/var/lib/postgresql:/var/lib/postgresql/data"
     environment:
-      MYSQL_ROOT_PASSWORD:
-      MYSQL_DATABASE:
-      MYSQL_USER:
-      MYSQL_PASSWORD:
-
+      MYSQL_DATABASE: "${DATABASE_NAME}"
+      MYSQL_USER: "${DATABASE_USER}"
+      MYSQL_PASSWORD: "${DATABASE_PASSWORD}"
+      MYSQL_HOST: "${DATABASE_HOST}"
+      MYSQL_ROOT_PASSWORD: "${DATABASE_PASSWORD}"
+      POSTGRES_USER:
+      POSTGRES_PASSWORD:
+      POSTGRES_DB:
   #neo4j:
   #elasticsearch:
-
 #volumes:
 #  mysql-data: {}
-
 networks:
   external:
