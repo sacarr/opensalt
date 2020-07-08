@@ -29,24 +29,23 @@ Originally, the OpenSalt prototype was designed to use Oracle's MySQL RDBMS.  Po
 * OpenSalt acceptance tests were executed to ensure consistency of implementation with the OpenSalt prototype when run against the original MySQL RDBMS.  As not all of the tests passed consistently against the OpenSalt prototype, some test scripts were updated to address intermittent failures
 * This README has been updated both to describe the changes required to support Postgres and to reflect changes to the installation procedures for local development introduced to make it easy for developers to use either MySQL or Postgres RDBMS
 
-
 Installation
 ------------
 
-1. Install Docker from [here](https://www.docker.com/products/docker)
-   and Docker Compose from [here](https://docs.docker.com/compose/install/)
-  - [Docker for Mac notes](./docs/DOCKER_FOR_MAC.md)
+While all steps required to install and start OpenSalt are described below, once Docker is installed, unattended installation may be accessed from a command line (CLI) by executing `./local-dev/initial_dev_install.sh`.
 
-  > **Note: the rest of the following can be automated by running `./local-dev/initial_dev_install.sh`**.  The script will ask the user which RDBMS should be supported, and configure Docker environment files accordingly
+This script will ask which RDBMS should be supported, configure environment variables accordingly, build and start Docker containers, install required PHP and Node.JS modules, install the database schema and create an administrative user account.
 
-  > Once the application is running:
-  > To create an organization use `./bin/console salt:org:add [organization name]`
-  > To create a user use `./bin/console salt:user:add [username] [--password="secret"] [--role="rolename"]`
-  > > The *initial_dev_install.sh* command creates an initial super admin "admin" with password "secret"
+Once the application is running, an initial organization may be created using the web-based user interface or by CLI by using the script `./bin/console salt:org:add [organization name]`.  Similarly, user accounts may be created using the web-based user-interface or by CLI using the script `./bin/console salt:user:add [username] [--password="secret"] [--role="rolename"]`
 
-  > `./bin/build.sh` also does much of the following, for doing a "build" after one has started development
+For continuous integration purposes, the script `./bin/build.sh` functions similarly to `local-dev/initial_dev_install.sh` without prompting for an RDBMS selection (RDBMS is assumed based on the currently active Docker environment configuration [docker/.env] and running containers).
 
-2. Create env file and docker-compose file
+Installation Details
+--------------------
+
+1. Install Docker from [here](https://www.docker.com/products/docker), Docker Compose from [here](https://docs.docker.com/compose/install/).  If you are working on a Mac, review [Docker for Mac](./docs/DOCKER_FOR_MAC.md).
+
+2. Create an .env file and docker-compose configuration
 
   ```Bash
   cp docker/.env.dist docker/.env
@@ -54,92 +53,97 @@ Installation
   ln -s docker-compose.dev.yml docker/docker-compose.yml
   ```
 
-When using MySQL,
+3. Extend the env file with additional RDBMS configuration parameters
 
-```Bash
-cat <<m.y.s.q.l >>docker/.env
+  ```Bash
+  # When using MySQL,
 
-# [ Container ]
-CONTAINER_REPO=percona
+  cat <<m.y.s.q.l >>docker/.env
 
-# [ Database Configuration ]
-DATABASE_BRAND=mysql
-DATABASE_CHARSET=utf8mb4
-DATABASE_COLLATE=utf8mb4_unicode_ci
-DATABASE_DRIVER=pdo_mysql
-DATABASE_FILTER=~^(?!(cache_items|LearningStandards|std_*|map_*|grade_level))~
-DATABASE_HOST=db
-DATABASE_NAME=cftf
-DATABASE_PASSWORD=cftf
-DATABASE_PORT=3306
-DATABASE_USER=cftf
-DATABASE_VERSION=5.7
-DB_USE_RDS_CERT=0
-m.y.s.q.l
-```
+  # [ Container ]
+  CONTAINER_REPO=percona
 
-When using Postgres,
+  # [ Database Configuration ]
+  DATABASE_BRAND=mysql
+  DATABASE_CHARSET=utf8mb4
+  DATABASE_COLLATE=utf8mb4_unicode_ci
+  DATABASE_DRIVER=pdo_mysql
+  DATABASE_FILTER=~^(?!(cache_items|LearningStandards|std_*|map_*|grade_level))~
+  DATABASE_HOST=db
+  DATABASE_NAME=cftf
+  DATABASE_PASSWORD=cftf
+  DATABASE_PORT=3306
+  DATABASE_USER=cftf
+  DATABASE_VERSION=5.7
+  DB_USE_RDS_CERT=0
+  m.y.s.q.l
 
-```Bash
-cat <<p.g.s.q.l >>docker/.env
+  # When using Postgres,
 
-# [ Container ]
-CONTAINER_REPO=postgres
+  cat <<p.g.s.q.l >>docker/.env
 
-# [ Database Configuration ]
-DATABASE_BRAND=pgsql
-DATABASE_CHARSET=UTF8
-DATABASE_COLLATE=ucs_basic
-DATABASE_DRIVER=pdo_pgsql
-DATABASE_FILTER=[^\w]
-DATABASE_HOST=db
-DATABASE_NAME=cftf
-DATABASE_PASSWORD=cftf
-DATABASE_PORT=5432
-DATABASE_USER=cftf
-DATABASE_VERSION=12.3
-p.g.s.q.l
-```
+  # [ Container ]
+  CONTAINER_REPO=postgres
 
-3. Edit docker/.env and set desired values
-
-  - The `PORT` specified is what is used in step 7 below
-
-4. Start the application
+  # [ Database Configuration ]
+  DATABASE_BRAND=pgsql
+  DATABASE_CHARSET=UTF8
+  DATABASE_COLLATE=ucs_basic
+  DATABASE_DRIVER=pdo_pgsql
+  DATABASE_FILTER=[^\w]
+  DATABASE_HOST=db
+  DATABASE_NAME=cftf
+  DATABASE_PASSWORD=cftf
+  DATABASE_PORT=5432
+  DATABASE_USER=cftf
+  DATABASE_VERSION=12.3
+  p.g.s.q.l
   ```
+
+4. Edit docker/.env and set any desired non-standard values
+
+   * The `PORT` specified is what is used in step 7 below
+
+5. Start the application
+
+  ```Bash
   make up
-  ```
-    * To stop the application
 
-    ```
-    make down
-    ```
+  # Stop the application
+  make down
 
-5. Install libraries with composer/yarn and build application
-  ```
+  # Install libraries with composer or yarn and re-build the application
   make force-build
-  ```
-  * Linux users should note that a new user group, `docker`, has been created. The user that will interact with the Docker service will need to be in this group.
-  * Linux users also set the MySQL folder permissions: `chmod -R 777 docker/data/mysql`
-  * Linux users should set the cache directory permssions: `chmod 777 var/cache`
-
-
-6. Run database migrations
-  ```
+  # Linux users note
+  #
+  #  The user that interacts with the Docker servuce must be added to the 'docker' group
+  #
+  #  The MySQL folder permissions should be set appropriately:
+  #
+  #    chmod -R 777 docker/data/mysql
+  #
+  # If using Postgres, the Postgres folder permissions should be set appropriately:
+  #
+  #    chmod -R 777 var/lib/postgresql
+  #
+  # The Symfony cache directory permssions should be set appropriately:
+  #
+  #    chmod 777 var/cache`
+  #
+  # Run database migrations
   make migrate
   ```
 
-7. [http://127.0.0.1:3000/app_dev.php/](http://127.0.0.1:3000/app_dev.php/) should show the initial screen with debug turned on
-  - Note that the port here should be the value of `PORT` in the `.env` file (default being 3000)
+6. [http://127.0.0.1:3000/app_dev.php/](http://127.0.0.1:3000/app_dev.php/) should show the initial screen with the debugging display visible.  The port shown here must match the value of `PORT` in the `.env` file (default being 3000)
 
-8. If you have run these manual tasks, you will also need to create the administrative account and password for the system:
-    ```
+7. If you have run these tasks manually, create an OpenSalt administrative account and password for the system:
+
+    ```Bash
     ./bin/console salt:user:add admin Unknown --password=secret --role=super-user
     ```
-
 
 Other Docs
 ----------
 
-- [User Management Commands](./docs/Commands.md)
-- [Github Authentication Config](./docs/deployment/GithubAuth.md)
+* [User Management Commands](./docs/Commands.md)
+* [Github Authentication Config](./docs/deployment/GithubAuth.md)
