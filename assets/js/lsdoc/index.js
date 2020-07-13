@@ -423,7 +423,47 @@ var SaltLocal = (function () {
             }
         }
     }
+    function handleLearningSpine() {
+        var files = document.getElementById('spine-url').files;
+        var file;
+        var data = new FormData();
 
+        if (window.File && window.FileReader && window.FileList && window.Blob) {
+            var file = files[0];
+            if ( isTypeValid(file.name) ) {
+
+                $('.tab-content').addClass('hidden');
+                $('.file-loading .row .col-md-12').html(utilSalt.spinner('Loading file'));
+                $('.file-loading').removeClass('hidden');
+                $('.case-error-msg').addClass('hidden');
+
+                data.append('file', file);
+                $.ajax({
+                    url: '/salt/chiropractor/import',
+                    data: data,
+                    cache: false,
+                    contentType: false,
+                    processData: false,
+                    type: 'POST',
+                    success: function (response) {
+                        location.reload();
+                    },
+                    error: function () {
+                        $('.tab-content').removeClass('hidden');
+                        $('.case-error-msg').html("We're sorry, only Houghton Mifflin Harcourt can load Chiropractor docuements.");
+                        $('.case-error-msg').removeClass('hidden');
+                        $('.file-loading').addClass('hidden');
+                    }
+                });
+            } else {
+                $('.tab-content').removeClass('hidden');
+                $('.case-error-msg').html('File type not allowed');
+                $('.case-error-msg').removeClass('hidden');
+                $('.file-loading').addClass('hidden');
+            }
+        }
+    }
+    
     function isTypeValid(file) {
         var types = ['xls', 'xlsx', 'json', 'csv'];
         var filename = file.split('.').pop();
@@ -437,7 +477,8 @@ var SaltLocal = (function () {
 
     return {
         handleFile: handleFileSelect,
-        handleExcelFile: handleExcelFile
+        handleExcelFile: handleExcelFile,
+        handleLearningSpine: handleLearningSpine
     };
 })();
 

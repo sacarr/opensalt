@@ -10,6 +10,7 @@
                         <ul class="nav nav-tabs">
                             <li class="active"><a href="#case" data-toggle="tab">Import CASE® file</a></li>
                             <li><a href="#spreadsheet" data-toggle="tab">Import Spreadsheet file</a></li>
+                            <li><a href="#spine" data-toggle="tab">Import Learning Spine</a></li>
                         </ul>
                         <br>
                         <div class="tab-content">
@@ -24,6 +25,12 @@
                                 <br/>
                                 <div class="alert alert-danger case-error-msg hidden" role="alert"></div>
                                 <a type="button" class="btn btn-primary btn-import btn-import-spreadsheet" onclick="SaltLocal.handleExcelFile('spreadsheet', 'file-url');">Import Framework</a>
+                            </div>
+                            <div class="tab-pane fade" id="spine">
+                                <input id="spine-url" type="file" class="form-control">
+                                <br/>
+                                <div class="alert alert-danger case-error-msg hidden" role="alert"></div>
+                                <a type="button" class="btn btn-primary btn-import btn-import-learning-spine" onclick="SaltLocal.handleLearningSpine('spine', 'spine-url');">Import Learning Spine</a>
                             </div>
                         </div>
                     </div>
