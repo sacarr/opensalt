@@ -12,10 +12,12 @@ use App\Entity\Framework\LsDoc;
 use App\Entity\Framework\LsItem;
 use App\Util\EducationLevelSet;
 use Doctrine\ORM\EntityManagerInterface;
+use phpDocumentor\Reflection\Types\Null_;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xls\Worksheet as XlsWorksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Worksheet as XlsxWorksheet;
 use Ramsey\Uuid\Uuid;
+use RuntimeException;
 
 final class SpineImport
 {
@@ -61,6 +63,128 @@ final class SpineImport
         return $this->entityManager;
     }
 
+    private $hierarchyLevels = array();
+
+    private function setHierarchyLevel(int $row, int $column, string $skillCode, ?LsItem $item) {
+        $msg = "SpineImport::setHierarchyLevel()";
+        if (null === $skillCode) {
+            throw new \RuntimeException(sprintf("%s Missing skill code", $msg));
+        }
+        $realRow = (($row*5)+$column);
+        $priorRow = ($realRow-5);
+        $rowValue = [];
+        // Initialize items in the first row to level 1 setting null items to level -1
+        if (0 === $row) {
+            if (null === $item) {
+                $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => -1);
+                $this->hierarchyLevels[$realRow] = $rowValue;
+                $msg = sprintf("%s [0] row[%d], array(code => %s, column => %d, level => %d, item => null)\n",
+                $msg, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
+                $this->hierarchyLevels[$realRow]['level']);
+            } else {
+                $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => 1);
+                $this->hierarchyLevels[$realRow] = $rowValue;
+                $msg = sprintf("%s [N] row[%d], array(code => %s, column => %d, level => %d, item => %s)\n",
+                $msg, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
+                $this->hierarchyLevels[$realRow]['level'], $this->hierarchyLevels[$realRow]['item']->getFullStatement());
+            }
+            $this->var_error_log($msg);
+            return;
+        }
+        // If  any other items are null, set the level to -1
+        if (null === $item) {
+            $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => -1);
+            $this->hierarchyLevels[$realRow] = $rowValue;
+            $msg = sprintf("%s [0] row[%d] array(code => %s, column => %d, level => %d, item => null)\n",
+            $msg, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
+            $this->hierarchyLevels[$realRow]['level']);
+        } else {
+            // A new item or a repeat of a prior item
+            $lastItem = $this->hierarchyLevels[$priorRow]['item'];
+            $lastLevel = $this->hierarchyLevels[$priorRow]['level'];
+            while ($priorRow >= 0 && null !== $lastItem && $lastItem->getFullStatement() !== $item->getFullStatement()) {
+                $priorRow=$priorRow-5;
+                $lastItem = $this->hierarchyLevels[$priorRow]['item'];
+                $lastLevel = $this->hierarchyLevels[$priorRow]['level'];
+            }
+            if ( null === $lastItem ) {
+                // Really a new item for this column.
+                if (0 === $column) {
+                    // If it is in column 0, its level is 1 + the highest level in column 0.
+                    $priorRow =$realRow-5;
+                    $highestLevel = 1;
+                    while ($priorRow >= 0 ) {
+                        $level = $this->hierarchyLevels[$priorRow]['level'];
+                        if ($level > $highestLevel) {
+                            $highestLevel = $level;
+                        }
+                        $priorRow = $priorRow - 5;
+                    }
+                    $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => ($highestLevel + 1));
+                    $this->hierarchyLevels[$realRow] = $rowValue;
+                } else {
+                    // If not in column 0,
+                    // find the highest level for an item in this column with the same parent
+                    $parentStatement = $this->hierarchyLevels[$realRow-1]['item']->getFullStatement();
+                    $priorRow =$realRow-5;
+                    $highestLevel = 1;
+                    while ($priorRow >= 0 ) {
+                        $level = $this->hierarchyLevels[$priorRow]['level'];
+                        if ($level > $highestLevel ) {
+                            $statement = $this->hierarchyLevels[$priorRow-1]['item']->getFullStatement();
+                            if ($statement === $parentStatement) {
+                                $highestLevel = $level;
+                            }
+                        }
+                        $priorRow = $priorRow - 5;
+                    }
+                    // Now, check the parent items.  If this is not the first occurrence of the parent level (e.g. column -1) === this item's grandparent level (e.g. row - 5, column -1),
+                    // Then this item has a predecessor at the same parent level.  Therefore this item's level is one plus the highest
+                    // level for this column where the item's grandparent's statement matches it's parent's statement
+                    $parentLevel = $this->hierarchyLevels[$realRow-1]['level'];
+                    $grandParentLevel = $this->hierarchyLevels[$realRow-6]['level'];
+                    if ($parentLevel === $grandParentLevel) {
+                        $lastLevel = $this->hierarchyLevels[$realRow-5]['level'];
+                        $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => ($highestLevel + 1));
+                        $this->hierarchyLevels[$realRow] = $rowValue;
+                    } else {
+                        // If parent and grandparent are not at the same level this is actually the first item for the parent level
+                        $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => 1);
+                        $this->hierarchyLevels[$realRow] = $rowValue;
+                    }
+                }
+                $msg = sprintf("%s [N] item row[%d] array(code => %s, column => %d, level => %d, item => %s)\n",
+                $msg, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
+                $this->hierarchyLevels[$realRow]['level'], $this->hierarchyLevels[$realRow]['item']->getFullStatement());
+            } else {
+                // This is a repeated item
+                $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => $lastLevel);
+                $this->hierarchyLevels[$realRow] = $rowValue;
+                $msg = sprintf("%s [R] row[%d] array(code => %s, column => %d, level => %d, item => %s)\n",
+                $msg, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
+                $this->hierarchyLevels[$realRow]['level'], $this->hierarchyLevels[$realRow]['item']->getFullStatement());
+            }
+            // The only thing left is items out of sequence, may not happen as these would still come thorugh as nulls
+        }
+        $this->var_error_log($msg);
+        return;
+    }
+
+    private function getSmartLevel(int $row, int $column, string $skillCode, string $itemIdentifier): ?string {
+
+        $smartLevel = "";
+        $levels = $this->hierarchyLevels[$row];
+        foreach ($levels as $level) {
+            if (null !== $level) {
+                $smartLevel = sprintf("%s.%d", $smartLevel, $level);
+            }
+        }
+        if (empty($smartLevel)) {
+            return null;
+        }
+        return $smartLevel;
+    }
+
     public function importSpine(string $path): LsDoc
     {
         set_time_limit(180); // increase time limit for large files
@@ -73,11 +197,10 @@ final class SpineImport
         $items = [];
         $itemSmartLevels = [];
         $children = [];
+        $hierarchyLevels[] = array(1,1,1,1,1);
 
         /** @var LsItem[] $smartLevels */
         $smartLevels = [];
-        $smartLevel = 1;
-
         $sheet = $phpExcelObject->getSheetByName('ELASpine');
         if (null === $sheet) {
             throw new \RuntimeException('This workbook does not container a Learinng Spine.');
@@ -87,27 +210,50 @@ final class SpineImport
 
         $lastRow = $sheet->getHighestRow();
 
-        $lastColumn = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($sheet->getHighestColumn());
-
         // Create hierarchy items
         for ($row =  7; $row <= $lastRow; ++$row) {
+            $rowLevel = $row - 7;
+            $hierarchyLevel = 0;
+            $skillCode = $this->getCellValueOrNull($sheet, 9, $row);
+            $smartLevel = "";
             for ( $column = 1; $column <= 5; $column++ ) {
                 $item = null;
                 $item = $this->saveHierarchyItem($sheet, $doc, $row, $column);
+                $this->setHierarchyLevel($rowLevel, $hierarchyLevel++, $skillCode, $item);
                 if (null === $item) {
+                    continue;
+                }
+                $statement = $item->getFullStatement();
+                $itemIdentifier = $item->getIdentifier();
+                if (null === $this->hierarchyItemIdentifiers[$statement]) {
+                    // Item is already in the catalog
+                    $this->hierarchyItemIdentifiers[$statement] = $itemIdentifier;
+                } 
+                $smartLevel = $this->getSmartLevel($rowLevel, $hierarchyLevel, $skillCode, $itemIdentifier);
+                $items[$item->getIdentifier()] = $item;
+                $smartLevels[$smartLevel] = $item;
+                $itemSmartLevels[$itemIdentifier] = $smartLevel;
+//                $msg = sprintf("SpineImport::importSpine() smartLevel %s [%s][%d]: %s", $smartLevels[$smartLevel]->getFullStatement() , $skillCode, $column, $smartLevel /*$itemSmartLevels[$itemIdentifier]*/);
+//                $this->var_error_log($msg);
+//                $hierarchyLevel++;
+/*
+                if (empty($smartLevel)) {
+                    $smartLevel = sprintf("%d", $hierarchyLevels[$skillCode][$column-1]);
+                } else {
+                    $smartLevel = sprintf("%s.%d", $smartLevel, $hierarchyLevels[$skillCode][$column-1]);
+                }
+            if (null === $item) {
+                        for ($q = $column-1; $q <= 5; $q++) {
+                        $hiearchyLevels[$row-7][$q] = null;
+                    }
                     continue;
                 }
                 if (null === $item->getFullstatement()) {
                     throw new \RuntimeException('Saved a hierarchy item with a null statement');
                 }
-                $statement = $item->getFullStatement();
-                $itemIdentifier = $item->getIdentifier();
-                $this->hierarchyItemIdentifiers[$statement] = $itemIdentifier;
-                $items[$item->getIdentifier()] = $item;
-                $smartLevels[$smartLevel] = $item;
-//                $msg = sprintf("SpineImport::importSpine() created hierarchy item [%d]: %s", $smartLevel, $statement);
-                $itemSmartLevels[$item->getIdentifier()] = $smartLevel++;
-//                $this->var_error_log($msg);
+*/
+
+
             }
 
             $item = $this->saveSkill($sheet, $doc, $row);
@@ -287,15 +433,15 @@ final class SpineImport
         );
     }
 */
-    private function saveHierarchyItem(Worksheet $sheet, lsDoc $doc, int $row, $column): ?LsItem
+    private function saveHierarchyItem(Worksheet $sheet, lsDoc $doc, int $row, int $column): ?LsItem
     {
+        $msg = sprintf("SpineImport::saveHierarchyItem() ");
         /** @var LsItem[] $items */
         $item = null;
         $humanCodingScheme = null;
         $identifier = null;
         $itemTypeTitle = $this->getCellValueOrNull($sheet, $column, 6);
         $statement = $this->getCellValueOrNull($sheet, $column, $row);
-        $skillCode = $this->getCellValueOrNull($sheet, 9, $row);
         $identifier = $this->hierarchyItemIdentifiers[$statement];
         if (null === $statement) {
             return null;
@@ -306,10 +452,10 @@ final class SpineImport
             if ( $item !== null) {
                 $itemStatement=$item->getFullStatement();
                 if ($itemStatement !== $statement ) {
-                    $msg = sprintf("SpineImport::saveHierarchyItem() Human Coding Scheme bad match: %s !== %s", $statement, $itemStatement);
+                    $msg = sprintf("%s %s !== %s", $msg, $statement, $itemStatement);
                     throw new \RuntimeException($msg);
                 }
-                return null;
+                return $item;
             }
         }
         $item = $doc->createItem();
