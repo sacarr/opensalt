@@ -149,7 +149,7 @@ final class SpineImport
             $this->var_error_log($msg);
             return;
         }
-        // If this item did not match a prior one, it is new.
+        // If this item did not match a prior one, it is a new item.
         // As it is not in column 0, find the highest level for an item in this column with the same parent  
         if ( null === $lastItem && 0 !== $column ) {
             $action = "N";
@@ -166,13 +166,15 @@ final class SpineImport
                 }
                 $priorRow = $priorRow - $rowOffset;
             }
-            // Now, check the parent items.  If this is not the first occurrence of the parent level (e.g. column -1) === this item's grandparent level (e.g. row - 5, column -1),
-            // Then this item has a predecessor at the same parent level.  Therefore this item's level is one plus the highest
-            // level for this column where the item's grandparent's statement matches it's parent's statement
+            // Now, scan the parent items.
+            // If the first occurrence of the parent is in this row, then the level for this item is 1
+            // If not, it is 1 + the highest level for items in this column with the same parent
+            // Then this item has a predecessor at the same parent level
+            // Therefore this item's level is one plus the highest level for this column
+            // If there are not at least two occurrences of the parent, this is the first itemwhere the item's grandparent's statement matches it's parent's statement
             $parentLevel = $this->hierarchyLevels[$realRow-1]['level'];
             $grandParentLevel = $this->hierarchyLevels[$realRow-(1+$rowOffset)]['level'];
             if ($parentLevel === $grandParentLevel) {
-                $lastLevel = $this->hierarchyLevels[$realRow-$rowOffset]['level'];
                 $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => ($highestLevel + 1));
                 $this->hierarchyLevels[$realRow] = $rowValue;
             } else {
