@@ -66,85 +66,99 @@ final class SpineImport
     private $hierarchyLevels = array();
 
     private function setHierarchyLevel(int $row, int $column, string $skillCode, ?LsItem $item) {
+        $rowOffset=5;
+        $skillRow = 5;
+        $realRow  = (($row*$rowOffset)+$column);
+        $priorRow = ($realRow-$rowOffset);
+        $rowValue = [];
+        $action = "N";
         $msg = "SpineImport::setHierarchyLevel()";
+
         if (null === $skillCode) {
             throw new \RuntimeException(sprintf("%s Missing skill code", $msg));
         }
-        $realRow = (($row*5)+$column);
-        $priorRow = ($realRow-5);
-        $rowValue = [];
         // Initialize items in the first row to level 1 setting null items to level -1
         if (0 === $row) {
             if (null === $item) {
+                $action = "0";
                 $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => -1);
                 $this->hierarchyLevels[$realRow] = $rowValue;
-                $msg = sprintf("%s [0] row[%d], array(code => %s, column => %d, level => %d, item => null)\n",
-                $msg, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
+                $msg = sprintf("%s [%s] row[%d], array(code => %s, column => %d, level => %d, item => null)\n",
+                $msg, $action, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
                 $this->hierarchyLevels[$realRow]['level']);
             } else {
+                $action = "N";
                 $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => 1);
                 $this->hierarchyLevels[$realRow] = $rowValue;
-                $msg = sprintf("%s [N] row[%d], array(code => %s, column => %d, level => %d, item => %s)\n",
-                $msg, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
-                $this->hierarchyLevels[$realRow]['level'], $this->hierarchyLevels[$realRow]['item']->getFullStatement());
+                $msg = sprintf("%s [%s] row[%d], array(code => %s, column => %d, level => %d, item => %s)\n",
+                $msg, $action, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
+                $this->hierarchyLevels[$realRow]['level'], $this->hierarchyLevels[$realRow]['item']->getAbbreviatedStatement());
             }
             $this->var_error_log($msg);
             return;
         }
         // If  any other items are null, set the level to -1
         if (null === $item) {
+            $action = "0";
             $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => -1);
             $this->hierarchyLevels[$realRow] = $rowValue;
-            $msg = sprintf("%s [0] row[%d] array(code => %s, column => %d, level => %d, item => null)\n",
-            $msg, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
+            $msg = sprintf("%s [%s] row[%d] array(code => %s, column => %d, level => %d, item => null)\n",
+            $msg, $action, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
             $this->hierarchyLevels[$realRow]['level']);
         } else {
             // A new item or a repeat of a prior item
             $lastItem = $this->hierarchyLevels[$priorRow]['item'];
             $lastLevel = $this->hierarchyLevels[$priorRow]['level'];
-            while ($priorRow >= 0 && null !== $lastItem && $lastItem->getFullStatement() !== $item->getFullStatement()) {
-                $priorRow=$priorRow-5;
+            while ($priorRow >= 0 && null !== $lastItem && $lastItem->getAbbreviatedStatement() !== $item->getAbbreviatedStatement()) {
+                $priorRow=$priorRow-$rowOffset;
                 $lastItem = $this->hierarchyLevels[$priorRow]['item'];
                 $lastLevel = $this->hierarchyLevels[$priorRow]['level'];
             }
+            // A new item in column 0 because no repeat was found
             if ( null === $lastItem ) {
-                // Really a new item for this column.
                 if (0 === $column) {
+                    $action = "N";
                     // If it is in column 0, its level is 1 + the highest level in column 0.
-                    $priorRow =$realRow-5;
+                    $priorRow =$realRow-$rowOffset;
                     $highestLevel = 1;
                     while ($priorRow >= 0 ) {
                         $level = $this->hierarchyLevels[$priorRow]['level'];
                         if ($level > $highestLevel) {
                             $highestLevel = $level;
                         }
-                        $priorRow = $priorRow - 5;
+                        $priorRow = $priorRow - $rowOffset;
                     }
                     $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => ($highestLevel + 1));
                     $this->hierarchyLevels[$realRow] = $rowValue;
+                    $msg = sprintf("%s [%s] row[%d] array(code => %s, column => %d, level => %d, item => %s)\n",
+                        $msg, $action, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
+                        $this->hierarchyLevels[$realRow]['level'], $this->hierarchyLevels[$realRow]['item']->getAbbreviatedStatement());
+                    $this->var_error_log($msg);
                 } else {
+                    // A new item in column 1 - 6
                     // If not in column 0,
                     // find the highest level for an item in this column with the same parent
-                    $parentStatement = $this->hierarchyLevels[$realRow-1]['item']->getFullStatement();
-                    $priorRow =$realRow-5;
+                    $action = "N";
+                    $parentStatement = $this->hierarchyLevels[$realRow-1]['item']->getAbbreviatedStatement();
+                    $priorRow =$realRow-$rowOffset;
                     $highestLevel = 1;
                     while ($priorRow >= 0 ) {
                         $level = $this->hierarchyLevels[$priorRow]['level'];
                         if ($level > $highestLevel ) {
-                            $statement = $this->hierarchyLevels[$priorRow-1]['item']->getFullStatement();
+                            $statement = $this->hierarchyLevels[$priorRow-1]['item']->getAbbreviatedStatement();
                             if ($statement === $parentStatement) {
                                 $highestLevel = $level;
                             }
                         }
-                        $priorRow = $priorRow - 5;
+                        $priorRow = $priorRow - $rowOffset;
                     }
                     // Now, check the parent items.  If this is not the first occurrence of the parent level (e.g. column -1) === this item's grandparent level (e.g. row - 5, column -1),
                     // Then this item has a predecessor at the same parent level.  Therefore this item's level is one plus the highest
                     // level for this column where the item's grandparent's statement matches it's parent's statement
                     $parentLevel = $this->hierarchyLevels[$realRow-1]['level'];
-                    $grandParentLevel = $this->hierarchyLevels[$realRow-6]['level'];
+                    $grandParentLevel = $this->hierarchyLevels[$realRow-(1+$rowOffset)]['level'];
                     if ($parentLevel === $grandParentLevel) {
-                        $lastLevel = $this->hierarchyLevels[$realRow-5]['level'];
+                        $lastLevel = $this->hierarchyLevels[$realRow-$rowOffset]['level'];
                         $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => ($highestLevel + 1));
                         $this->hierarchyLevels[$realRow] = $rowValue;
                     } else {
@@ -153,16 +167,17 @@ final class SpineImport
                         $this->hierarchyLevels[$realRow] = $rowValue;
                     }
                 }
-                $msg = sprintf("%s [N] item row[%d] array(code => %s, column => %d, level => %d, item => %s)\n",
-                $msg, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
-                $this->hierarchyLevels[$realRow]['level'], $this->hierarchyLevels[$realRow]['item']->getFullStatement());
+                $msg = sprintf("%s [%s] item row[%d] array(code => %s, column => %d, level => %d, item => %s)\n",
+                $msg, $action, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
+                $this->hierarchyLevels[$realRow]['level'], $this->hierarchyLevels[$realRow]['item']->getAbbreviatedStatement());
             } else {
                 // This is a repeated item
+                $action = "R";
                 $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => $lastLevel);
                 $this->hierarchyLevels[$realRow] = $rowValue;
-                $msg = sprintf("%s [R] row[%d] array(code => %s, column => %d, level => %d, item => %s)\n",
-                $msg, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
-                $this->hierarchyLevels[$realRow]['level'], $this->hierarchyLevels[$realRow]['item']->getFullStatement());
+                $msg = sprintf("%s [%s] row[%d] array(code => %s, column => %d, level => %d, item => %s)\n",
+                $msg, $action, $realRow, $this->hierarchyLevels[$realRow]['code'], $this->hierarchyLevels[$realRow]['column'],
+                $this->hierarchyLevels[$realRow]['level'], $this->hierarchyLevels[$realRow]['item']->getAbbreviatedStatement());
             }
             // The only thing left is items out of sequence, may not happen as these would still come thorugh as nulls
         }
