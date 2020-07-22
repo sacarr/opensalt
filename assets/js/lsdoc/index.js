@@ -450,7 +450,7 @@ var SaltLocal = (function () {
                     },
                     error: function () {
                         $('.tab-content').removeClass('hidden');
-                        $('.case-error-msg').html("We're sorry, only Houghton Mifflin Harcourt can load Chiropractor docuements.");
+                        $('.case-error-msg').html("Error while importing the spine");
                         $('.case-error-msg').removeClass('hidden');
                         $('.file-loading').addClass('hidden');
                     }

@@ -33,14 +33,16 @@ final class SpineImport
     private $entityManager;
 
     private $levels = [];
-    private $rowOffset;
+    private int $rowOffset;
     private $levelIndex = [];
+    private int $rootLevel;
 
     private $hierarchyItemIdentifiers    = [];
 
     public function __construct(EntityManagerInterface $entityManager)
     {
-        $this->rowOffset  = 6;
+        $this->rowOffset = 6;
+        $this->rootLevel = 0;
         $this->entityManager = $entityManager;
         
         if (null === self::$itemCustomFields) {
@@ -78,29 +80,37 @@ final class SpineImport
         $key = "";
         $match = [];
         $action = "N";
-        // null Item in teh first row
-        if (null === $item) {
-            $action = "0";
-            $newRow = array('row' => $realRow, 'level' => -1, 'smartLevel' => "-1");
-            $this->levelIndex['null'] = $newRow;
-            $msg = sprintf("%s\t\t[%s] row[%d] index[%s][%d, level => %d, smartLevel => %s]\n", $msg, $action, $realRow, "null", $this->levelIndex['null']['row'],
-                $this->levelIndex['null']['level'], $this->levelIndex['null']['smartLevel']);
-            $this->var_error_log($msg);
-            return -1;
-        }
         // Items at level 1
         if (0 !== $row){
             throw new RuntimeException(sprintf("%s, cannot initialize the index for an item at position [%d, %d]", $msg, $row, $column));
         }
+        if (0 === $column) {
+            $this->rootLevel++;
+        }
+        // null Item in the first row of the spreadsheet
+        // TODO: Fix this to handle multiple null items in the first row
+        if (null === $item) {
+            $action = "0";
+            if (null === $this->levelIndex['null']) {
+                $newRow = array('row' => $realRow, 'level' => -1, 'smartLevel' => "-1", 'last' => 0);
+            } else {
+                $newRow = array('row' => $realRow, 'level' => -1, 'smartLevel' => "-1", 'last' => $this->levelIndex['null']['row']);
+            }
+            $this->levelIndex['null'] = $newRow;
+            $this->var_error_log(sprintf("%s\t\t[%s] row[%d] index[%s][%d, level => %d, smartLevel => %s, last => %d]\n",
+                $msg, $action, $this->levelIndex['null']['row'], "null", $this->levelIndex['null']['row'],
+                $this->levelIndex['null']['level'], $this->levelIndex['null']['smartLevel'], $this->levelIndex['null']['last']));
+            return -1;
+        }
         for ($i = 1; $i <= $column; $i++) {
             $smartLevel = sprintf("%s.1", $smartLevel);
         }
-        $newRow = array('row' => $realRow, 'level' => 1, 'smartLevel' => $smartLevel);
+        $newRow = array('row' => $realRow, 'level' => $this->rootLevel, 'smartLevel' => $smartLevel, 'last' => 0);
         $key = $item->getAbbreviatedStatement();
         $this->levelIndex[$key] = $newRow;
-        $msg = sprintf("%s\t\t[%s] row[%d]\tindex[%s][%d, level => %d, smartLevel => %s]\n", $msg, $action, $realRow, $key, $this->levelIndex[$key]['row'],
-            $this->levelIndex[$key]['level'], $this->levelIndex[$key]['smartLevel']);
-        $this->var_error_log($msg);
+        $this->var_error_log(sprintf("%s\t\t[%s] row[%d]\tindex[%s][%d, level => %d, smartLevel => %s, last => %d]\n",
+            $msg, $action, $this->levelIndex[$key]['row'], $key, $this->levelIndex[$key]['row'],
+            $this->levelIndex[$key]['level'], $this->levelIndex[$key]['smartLevel'], $this->levelIndex[$key]['last']));
         return 1;
     }
 
