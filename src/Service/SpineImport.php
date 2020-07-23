@@ -190,6 +190,7 @@ final class SpineImport
         switch ($column) {
             case 0: {
             // In column 0, there is no true parent
+            // Therefore no need to update the reference to the last child in the level index when processing these items
             $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] root level %d, while looking up item %s", $msg, $action, $realRow, $this->rootLevel, $key));
             $predecessor = $this->levels[($this->rootLevel-1)]['item'];
             if (null === $predecessor) {
@@ -200,7 +201,6 @@ final class SpineImport
             $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] PARENT[%s][row => %d, level => %d, smartLevel => %s, last => %d]\n",
                     $msg, $action, $realRow, $parentKey, $this->levelIndex[$parentKey]['row'], $this->levelIndex[$parentKey]['level'],
                     $this->levelIndex[$parentKey]['smartLevel'], $this->levelIndex[$parentKey]['last']));
-            $this->levelIndex[$parentKey]['last'] = $realRow;
             $level = ++$this->rootLevel;
             $smartLevel = sprintf("%d", $level);
             break;
@@ -214,11 +214,6 @@ final class SpineImport
                 $match = $this->levelIndex[$parentKey];
                 if (true === boolVal($match) && array_key_exists('last', $match)) {
                     $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] found parent %s for item %s", $msg, $action, $realRow, $parentKey, $key));
-//                    $last = $this->levelIndex[$parentKey]['last'];
-//                    $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] last occurrence of parent %s at row %d", $msg, $action, $realRow, $parentKey, $last));
-//                    $parentColumn = $this->levels[$last]['column'];
-//                    $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] column [%d] for parent %s", $msg, $action, $realRow, $parentColumn, $parentKey));
-//                    $predecessorRow = $last + ($column - $parentColumn);
                     $predecessorRow = $this->levelIndex[$parentKey]['last'];
                     $predecessor = $this->levels[$predecessorRow]['item'];
                     $predecessorColumn = $this->levels[$predecessorRow]['column'];
@@ -377,7 +372,6 @@ final class SpineImport
             }
         }
             
-/*
         $associationsIdentifiers = [];
         foreach ($items as $item) {
             $smartLevel = $itemSmartLevels[$item->getIdentifier()];
@@ -421,7 +415,7 @@ final class SpineImport
         }
 
         $items[$doc->getIdentifier()] = $doc;
-
+/*
         $sheet = $phpExcelObject->getSheetByName('CF Association');
         if (null === $sheet) {
             throw new \RuntimeException('CF Association sheet does not exist in the workbook');
