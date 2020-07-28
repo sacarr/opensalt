@@ -318,7 +318,7 @@ final class SpineImport
 
         /** @var LsItem[] $smartLevels */
         $smartLevels = [];
-        $sheet = $phpExcelObject->getSheetByName('ELASpine');
+        $sheet = $phpExcelObject->getSheetByName('Spine_Template');
         if (null === $sheet) {
             throw new \RuntimeException('This workbook does not container a Learinng Spine.');
         }
