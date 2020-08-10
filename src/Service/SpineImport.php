@@ -466,69 +466,6 @@ final class SpineImport
         return $doc;
     }
 
-    private function humanCodingSchemeFromStatement(?string $statement): ?string
-    {
-        $pattern = "(^[Aa]nd$|^[Bb]ut$|^[Oo][f|n|r]$|^[Ii][s|f|n|t]$|^I$|^I'm$|[Yy]ou.*$|^[Oo]ur$|^[Ww]here$|^[Ww]hat$|^[Ww]hen$|^[Ww]hy$|^[Hh]ow$)";
-        if (null === $statement){
-            return null;
-        }
-        $words = explode(" ", $statement);
-        if ( empty($words) ) {
-            $msg = sprintf("Unrecognized statement format for statement %s", $statement);
-            throw new \RuntimeException($msg);
-        }
-        if (1 === count($words) ) {
-            return strtoupper(substr($words[0], 0, 2));
-        }
-        $humanCodingScheme = "";
-        foreach ($words as $word) {
-            if (0 === preg_match($pattern, $word) ) {
-                $humanCodingScheme = sprintf("%s%s", $humanCodingScheme, strtoupper(substr($word, 0, 1)));
-            }
-        }
-        return $humanCodingScheme;
-    }
-    
-    private function humanCodingSchemeFromsSkillCode(?string $code, $column): ?string
-    {
-        if (null === $code) {
-            return null;
-        }
-        $words = explode(".", $code);
-        if (empty($words) ) {
-            $msg = sprintf("Unrecognized skill code format for code %s", $code);
-            throw new \RuntimeException($msg);
-        }
-        $cnt = count($words);
-        if ($cnt < $column) {
-            return null;
-        }
-        return $words[$column];
-    }
-
-/*
-    function gen_uuid() {
-        return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-            // 32 bits for "time_low"
-            mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
-    
-            // 16 bits for "time_mid"
-            mt_rand( 0, 0xffff ),
-    
-            // 16 bits for "time_hi_and_version",
-            // four most significant bits holds version number 4
-            mt_rand( 0, 0x0fff ) | 0x4000,
-    
-            // 16 bits, 8 bits for "clk_seq_hi_res",
-            // 8 bits for "clk_seq_low",
-            // two most significant bits holds zero and one for variant DCE1.1
-            mt_rand( 0, 0x3fff ) | 0x8000,
-    
-            // 48 bits for "node"
-            mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
-        );
-    }
-*/
     private function saveHierarchyItem(Worksheet $sheet, lsDoc $doc, int $row, int $column): ?LsItem
     {
         $msg = sprintf("SpineImport::saveHierarchyItem() ");

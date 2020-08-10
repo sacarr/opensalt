@@ -46,6 +46,7 @@ class OAuthCredential
      */
     private $scopes = [
         'http://purl.imsglobal.org/casenetwork/case/v1p0/scope/core.readonly',
+        'http://purl.imsglobal.org/casenetwork/case/v1p0/scope/all.readonly',
     ];
 
     /**
