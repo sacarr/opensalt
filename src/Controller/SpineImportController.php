@@ -17,7 +17,47 @@ class SpineImportController extends AbstractController
     use CommandDispatcherTrait;
 
     /**
-     * @Route("/salt/chiropractor/import", methods={"POST"}, name="import_chiropractor_file")
+     * @Route("/salt/spine/import/skills", methods={"POST"}, name="spine_import_skills")
+     * @Security("is_granted('create', 'lsdoc')")
+     *
+     * @return Response
+     */
+    public function importSpineSkills(Request $request, UserInterface $user): Response
+    {
+        if (!($user instanceof User)) {
+            throw $this->createAccessDeniedException();
+        }
+        $file = $request->files->get('file');
+        $path = $file->getRealPath();
+
+        $command = new ImportSpineCommand($path, "skills", null, $user->getOrg());
+        $this->sendCommand($command);
+
+        return new Response('OK', Response::HTTP_OK);
+    }
+
+    /**
+     * @Route("/salt/spine/import/standards", methods={"POST"}, name="spine_import_standards")
+     * @Security("is_granted('create', 'lsdoc')")
+     *
+     * @return Response
+     */
+    public function importSpineStandards(Request $request, UserInterface $user): Response
+    {
+        if (!($user instanceof User)) {
+            throw $this->createAccessDeniedException();
+        }
+        $file = $request->files->get('file');
+        $path = $file->getRealPath();
+
+        $command = new ImportSpineCommand($path, "standards", null, $user->getOrg());
+        $this->sendCommand($command);
+
+        return new Response('OK', Response::HTTP_OK);
+    }
+
+    /**
+     * @Route("/salt/spine/import/spine", methods={"POST"}, name="spine_import_spine")
      * @Security("is_granted('create', 'lsdoc')")
      *
      * @return Response
@@ -30,9 +70,10 @@ class SpineImportController extends AbstractController
         $file = $request->files->get('file');
         $path = $file->getRealPath();
 
-        $command = new ImportSpineCommand($path, null, $user->getOrg());
+        $command = new ImportSpineCommand($path, "spine", null, $user->getOrg());
         $this->sendCommand($command);
 
         return new Response('OK', Response::HTTP_OK);
     }
+
 }

@@ -34,8 +34,9 @@ class ImportSpineHandler extends AbstractDoctrineHandler
         $path = $command->getSpinePath();
         $creator = $command->getCreator();
         $organization = $command->getOrganization();
+        $target = $command->getImportTarget();
 
-        $doc = $this->importService->importSpine($path);
+        $doc = $this->importService->importSpine($path, $target);
         if ($creator) {
             $doc->setCreator($creator);
         }

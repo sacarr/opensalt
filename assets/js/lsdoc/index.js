@@ -423,10 +423,23 @@ var SaltLocal = (function () {
             }
         }
     }
-    function handleLearningSpine() {
+    function handleSpine() {
+        var target = document.getElementById('spine-import-target');
+        var targetUrl = '/salt/spine/import/spine';
         var files = document.getElementById('spine-url').files;
         var file;
         var data = new FormData();
+
+        switch (target) {
+            case "skills":
+                targetUrl = '/salt/spine/import/skills'
+                break;
+            case "standards":
+                targetUrl = '/salt/spine/import/standards';
+                break;
+            default:
+                targetUrl = '/salt/spine/import/spine';
+        }
 
         if (window.File && window.FileReader && window.FileList && window.Blob) {
             var file = files[0];
@@ -439,7 +452,7 @@ var SaltLocal = (function () {
 
                 data.append('file', file);
                 $.ajax({
-                    url: '/salt/chiropractor/import',
+                    url: targetUrl,
                     data: data,
                     cache: false,
                     contentType: false,
@@ -463,7 +476,7 @@ var SaltLocal = (function () {
             }
         }
     }
-    
+
     function isTypeValid(file) {
         var types = ['xls', 'xlsx', 'json', 'csv'];
         var filename = file.split('.').pop();
@@ -478,7 +491,7 @@ var SaltLocal = (function () {
     return {
         handleFile: handleFileSelect,
         handleExcelFile: handleExcelFile,
-        handleLearningSpine: handleLearningSpine
+        handleSpine: handleSpine
     };
 })();
 

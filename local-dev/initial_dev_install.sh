@@ -5,11 +5,11 @@ cd $(dirname $0)/..
 
 printf "\n\n"
 while test ${ready:-false} != true; do
-  while test ${DATABASE_BRAND:-not_set} != "mysql" && test ${DATABASE_BRAND:-not_set} != "postgres" && test ${DATABASE_BRAND:-not_set} != "pgsql"; do
-    if test ${DATABASE_BRAND:-not_set} != "not_set" && ( test ${DATABASE_BRAND:-not_set} != "mysql" && test ${DATABASE_BRAND:-not_set} != "postgres" && test ${DATABASE_BRAND:-not_set} != "pgsql"); then {
+  while test ${DATABASE_BRAND:-not_set} != "mysql" && test ${DATABASE_BRAND:-not_set} != "postgres" && test ${DATABASE_BRAND:-not_set} != "pgsql" && test ${DATABASE_BRAND:-not_set} != "psql"; do
+    if test ${DATABASE_BRAND:-not_set} != "not_set" && ( test ${DATABASE_BRAND:-not_set} != "mysql" && test ${DATABASE_BRAND:-not_set} != "postgres" && test ${DATABASE_BRAND:-not_set} != "pgsql" && test ${DATABASE_BRAND:-not_set} != "pgsql"); then {
       printf "\n\t${DATABASE_BRAND} is not supported\n"
     } fi
-    printf "\tSelect a database platform [mysql, postgres(pgsql)]: "
+    printf "\tSelect a database platform [mysql, postgres(psql)]: "
     read DATABASE_BRAND
     DATABASE_BRAND=`echo ${DATABASE_BRAND} | tr '[:upper:]' '[:lower:]'`
   done
@@ -22,7 +22,7 @@ while test ${ready:-false} != true; do
   rm -f docker/.env ./.env
   cp docker/.env.dist docker/.env && ln -sf docker/.env .env
 
-  if test ${DATABASE_BRAND} == "postgres" || test ${DATABASE_BRAND} == "pgsql"; then {
+  if test ${DATABASE_BRAND} == "postgres" || test ${DATABASE_BRAND} == "pgsql" || test ${DATABASE_BRAND} == "psql"; then {
   cat <<p.g.s.q.l >>docker/.env
 
 # [ Container ]

@@ -24,11 +24,17 @@ class ImportSpineCommand extends BaseCommand
     /**
      * @var string
      */
+    private $target;
+
+    /**
+     * @var string
+     */
     private $creator;
 
-    public function __construct(string $path, ?string $creator = null, ?Organization $organization = null)
+    public function __construct(string $path, ?string $target = "spine", ?string $creator = null, ?Organization $organization = null)
     {
         $this->path = $path;
+        $this->target = $target;
         $this->organization = $organization;
         $this->creator = $creator;
     }
@@ -38,6 +44,10 @@ class ImportSpineCommand extends BaseCommand
         return $this->path;
     }
 
+    public function getImportTarget(): ?string 
+    {
+        return $this->target;
+    }
     public function getOrganization(): ?Organization
     {
         return $this->organization;
