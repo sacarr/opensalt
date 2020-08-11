@@ -117,9 +117,9 @@ RUN composer global require \
 	&& chmod -R a+w ${COMPOSER_HOME}
 
 # Remove intermediary's certificate from the container's trust authority
-RUN rm /usr/share/ca-certificates/firewall.crt \
-	&& rm /etc/ca-certificates.conf \
-	&& mv /etc/ca-certifcates.conf.0 /etc/ca-certificates.conf \
-	&& /usr/sbin/update-ca-certificates
+# RUN rm /usr/share/ca-certificates/firewall.crt \
+# 	&& rm /etc/ca-certificates.conf \
+# 	&& mv /etc/ca-certifcates.conf.0 /etc/ca-certificates.conf \
+#	&& /usr/sbin/update-ca-certificates
 
 
