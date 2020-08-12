@@ -27,12 +27,12 @@
                                 <a type="button" class="btn btn-primary btn-import btn-import-spreadsheet" onclick="SaltLocal.handleExcelFile('spreadsheet', 'file-url');">Import Framework</a>
                             </div>
                             <div class="tab-pane fade" id="spine">
-                                <input type="radio" id="spine-header" name="spine-import-target" value="spine-header" checked>
-                                    <label for="skills">Spine Header (Only)</label> 
-                                <input type="radio" id="skills" name="spine-import-target" value="skills">
-                                    <label for="skills">Spine Header and Skills</label> 
-                                <input type="radio" id="standards" name="spine-import-target" value="standards">
-                                    <label for="standards">Competency Associations (Only)</label> 
+                                <input type="radio" id="spine-header" name="spineImportTarget" value="spine-header" checked>
+                                    <label for="skills">Header</label> 
+                                <input type="radio" id="spine-skills" name="spineImportTarget" value="skills">
+                                    <label for="skills">Skills</label> 
+                                <input type="radio" id="spine-associations" name="spineImportTarget" value="standards">
+                                    <label for="standards">Standards Associations</label> 
                                 <br/>
                                 <input id="spine-url" type="file" class="form-control">
                                 <br/>

@@ -424,21 +424,24 @@ var SaltLocal = (function () {
         }
     }
     function handleSpine() {
-        var target = document.getElementById('spine-import-target');
-        var targetUrl = '/salt/spine/import/spine';
+        var spineImportTargets = document.getElementsByName('spineImportTarget');
+        var targetUrl = '';
         var files = document.getElementById('spine-url').files;
         var file;
         var data = new FormData();
-
-        switch (target) {
-            case "skills":
-                targetUrl = '/salt/spine/import/skills'
-                break;
-            case "standards":
-                targetUrl = '/salt/spine/import/standards';
-                break;
-            default:
-                targetUrl = '/salt/spine/import/spine';
+        for (i = 0; i< spineImportTargets.length; i++) {
+            if (spineImportTargets[i].checked) {
+                switch (spineImportTargets[i].value) {
+                    case "skills":
+                        targetUrl = '/salt/spine/import/skills'
+                        break;
+                    case "standards":
+                        targetUrl = '/salt/spine/import/standards';
+                        break;
+                    default:
+                        targetUrl = '/salt/spine/import/spine';
+                }
+            }
         }
 
         if (window.File && window.FileReader && window.FileList && window.Blob) {
