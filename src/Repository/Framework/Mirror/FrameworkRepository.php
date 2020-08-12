@@ -15,17 +15,29 @@ class FrameworkRepository extends ServiceEntityRepository
 
     public function findNext(): ?Framework
     {
-        return $this->createQueryBuilder('f')
-            ->andWhere('f.nextCheck < :now')
-            ->andWhere('f.nextCheck IS NOT NULL')
-            ->andWhere('f.include = 1')
-            ->addOrderBy('f.priority', 'DESC')
-            ->addOrderBy('f.lastCheck', 'ASC')
-            ->getQuery()
-            ->setParameter('now', new \DateTimeImmutable())
-            ->setMaxResults(1)
-            ->getOneOrNullResult()
-        ;
+        if ('postgresql' == $this->getEntityManager()->getConnection()->getDatabasePlatform()->getName() ) {
+            return $this->createQueryBuilder('f')
+                ->andWhere('f.nextCheck < :now')
+                ->andWhere('f.nextCheck IS NOT NULL')
+                ->andWhere('f.include = true')
+                ->addOrderBy('f.priority', 'DESC')
+                ->addOrderBy('f.lastCheck', 'ASC')
+                ->getQuery()
+                ->setParameter('now', new \DateTimeImmutable())
+                ->setMaxResults(1)
+                ->getOneOrNullResult();
+        } else {
+            return $this->createQueryBuilder('f')
+                ->andWhere('f.nextCheck < :now')
+                ->andWhere('f.nextCheck IS NOT NULL')
+                ->andWhere('f.include = 1')
+                ->addOrderBy('f.priority', 'DESC')
+                ->addOrderBy('f.lastCheck', 'ASC')
+                ->getQuery()
+                ->setParameter('now', new \DateTimeImmutable())
+                ->setMaxResults(1)
+                ->getOneOrNullResult();
+        }
     }
 
     public function markAsProcessing(Framework $framework): bool
