@@ -36,7 +36,20 @@ class ImportSpineHandler extends AbstractDoctrineHandler
         $organization = $command->getOrganization();
         $target = $command->getImportTarget();
 
-        $doc = $this->importService->importSpine($path, $target);
+        switch ($target) {
+            case "spine": {
+                $doc = $this->importService->importSpine($path);
+            break;
+            }
+            case "skills": {
+                $doc = $this->importService->importSkills($path);
+            break;
+            }
+            case "standards": {
+                $doc = $this->importService->importAssociations($path);
+            break;
+            }
+        }
         if ($creator) {
             $doc->setCreator($creator);
         }
@@ -55,20 +68,6 @@ class ImportSpineHandler extends AbstractDoctrineHandler
             ]
         );
         $command->setNotificationEvent($notification);
-    }
-
-
-    public function var_error_log($message, $object = null) :void
-    {
-        if (null == $object ) {
-            error_log("\n\nDEBUG: ".__FILE__."(line ".__LINE__.")::".__FUNCTION__. " " .$message);
-            return;
-        }
-        ob_start();
-        var_dump($object);
-        $contents = ob_get_contents();
-        ob_end_clean();
-        error_log("\n\nDEBUG: ". __FILE__ . "(line ". __LINE__ . ")::" . __FUNCTION__ . "\n\n" . $message . " " . $contents);
     }
 
 }

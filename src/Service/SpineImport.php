@@ -32,10 +32,16 @@ final class SpineImport
      */
     private $entityManager;
 
-    private $levels = [];
     private int $rowOffset;
-    private $levelIndex = [];
     private int $rootLevel;
+
+    private $levels = []; // Array of all items [int (0-based index into rows and columns) ['code' => string($skillCode), 'item' => LsItem($item), 'column' => int($column), 'level' => int($level the depth of this item relative to other items at the sam eparent level)]]
+    private $levelIndex = []; // Index into $this->levels [string (abbreviated statement) ['row' => int, 'level' => int, 'smartLevel' => string, 'last' => int]]
+
+//    private $levels = [];
+//    private int $rowOffset;
+//    private $levelIndex = [];
+//    private int $rootLevel;
 
     private $hierarchyItemIdentifiers    = [];
 
@@ -302,9 +308,27 @@ final class SpineImport
         }
     }
 
-    public function importSpine(string $path, string $target): LsDoc
+    public function importSpine(string $path): LsDoc
     {
         set_time_limit(180); // increase time limit for large files
+        $msg = "SpineImport::importSpine()";
+        $phpExcelObject = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
+        if (null === $phpExcelObject) {
+            throw new \RuntimeException('Cannot load spine from file'.$path);
+        }
+        $sheet = $phpExcelObject->getSheetByName('Spine_Template');
+        if (null === $sheet) {
+            throw new \RuntimeException('This workbook does not container a Learinng Spine.');
+        }
+        $this->var_error_log(sprintf("%s", $msg));
+        $doc = $this->saveDocument($sheet);
+        return $doc;
+    }
+
+    public function importSkills(string $path): LsDoc
+    {
+        set_time_limit(180); // increase time limit for large files
+        $msg = "SpineImport::importSkills";
 
         $phpExcelObject = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
         if (null === $phpExcelObject) {
@@ -322,107 +346,117 @@ final class SpineImport
         if (null === $sheet) {
             throw new \RuntimeException('This workbook does not container a Learinng Spine.');
         }
+        $this->var_error_log(sprintf("%s", $msg));
         $doc = $this->saveDocument($sheet);
-        switch ($target) {
-            case "spine": {
-                return $doc;
-            }
-            case "skills": {
-                $children[$doc->getIdentifier()] = $doc->getIdentifier();
+        $children[$doc->getIdentifier()] = $doc->getIdentifier();
+        $lastRow = $sheet->getHighestRow();
 
-                $lastRow = $sheet->getHighestRow();
-
-                // Create hierarchy items
-                for ($row =  7; $row <= $lastRow; ++$row) {
-                    $rowLevel = $row - 7;
-                    $hierarchyLevel = 0;
-                    $skillCode = $this->getCellValueOrNull($sheet, 9, $row);
-                    $smartLevel = "";
-                    for ( $column = 1; $column <= 5; $column++ ) {
-                        $item = null;
-                        $item = $this->saveHierarchyItem($sheet, $doc, $row, $column);
-                        $this->setHierarchyLevel($rowLevel, $hierarchyLevel++, $skillCode, $item);
-                        if (null === $item) {
-                            continue;
-                        }
-                        $key = $item->getAbbreviatedStatement();
-                        $itemIdentifier = $item->getIdentifier();
-                        if (null === $this->hierarchyItemIdentifiers[$key]) {
-                            // Item is already in the catalog
-                            $this->hierarchyItemIdentifiers[$key] = $itemIdentifier;
-                        }
-                        if (array_key_exists('smartLevel', $this->levelIndex[$key])) {
-                            $smartLevel = $this->levelIndex[$key]['smartLevel'];
-                            $items[$itemIdentifier] = $item;
-                            $smartLevels[$smartLevel] = $item;
-                            $itemSmartLevels[$itemIdentifier] = $smartLevel;
-                        }
-                    }
-                    $item = $this->saveSkill($sheet, $doc, $row);
-                    $this->setHierarchyLevel($rowLevel, $hierarchyLevel++, $skillCode, $item);
-                    if (null === $item) {
-                        continue;
-                    }
-                    $key = $item->getAbbreviatedStatement();
-                    $itemIdentifier = $item->getIdentifier();
-                    if (null === $this->hierarchyItemIdentifiers[$key]) {
-                        // Item is already in the catalog
-                        $this->hierarchyItemIdentifiers[$key] = $itemIdentifier;
-                    }
-                    if (array_key_exists('smartLevel', $this->levelIndex[$key])) {
-                        $smartLevel = $this->levelIndex[$key]['smartLevel'];
-                        $items[$itemIdentifier] = $item;
-                        $smartLevels[$smartLevel] = $item;
-                        $itemSmartLevels[$itemIdentifier] = $smartLevel;
-                    }
+        // Create domain, cluster, strand, sub-strand, sub-strand-2 hierarchy items and skills
+        for ($row =  7; $row <= $lastRow; ++$row) {
+            $rowLevel = $row - 7;
+            $hierarchyLevel = 0;
+            $skillCode = $this->getCellValueOrNull($sheet, 9, $row);
+            $smartLevel = "";
+            for ( $column = 1; $column <= 5; $column++ ) {
+                $item = null;
+                $item = $this->saveHierarchyItem($sheet, $doc, $row, $column);
+                $this->setHierarchyLevel($rowLevel, $hierarchyLevel++, $skillCode, $item);
+                if (null === $item) {
+                    continue;
                 }
+                $key = $item->getAbbreviatedStatement();
+                $itemIdentifier = $item->getIdentifier();
+                if (null === $this->hierarchyItemIdentifiers[$key]) {
+                    // Item is already in the catalog
+                    $this->hierarchyItemIdentifiers[$key] = $itemIdentifier;
+                }
+                if (array_key_exists('smartLevel', $this->levelIndex[$key])) {
+                    $smartLevel = $this->levelIndex[$key]['smartLevel'];
+                    $items[$itemIdentifier] = $item;
+                    $smartLevels[$smartLevel] = $item;
+                    $itemSmartLevels[$itemIdentifier] = $smartLevel;
+                }
+            }
+            $item = $this->saveSkill($sheet, $doc, $row);
+            $this->setHierarchyLevel($rowLevel, $hierarchyLevel++, $skillCode, $item);
+            if (null === $item) {
+                continue;
+            }
+            $key = $item->getAbbreviatedStatement();
+            $itemIdentifier = $item->getIdentifier();
+            if (null === $this->hierarchyItemIdentifiers[$key]) {
+                // Item is already in the catalog
+                $this->hierarchyItemIdentifiers[$key] = $itemIdentifier;
+            }
+            if (array_key_exists('smartLevel', $this->levelIndex[$key])) {
+                $smartLevel = $this->levelIndex[$key]['smartLevel'];
+                $items[$itemIdentifier] = $item;
+                $smartLevels[$smartLevel] = $item;
+                $itemSmartLevels[$itemIdentifier] = $smartLevel;
+            }
+        }
                 
-                $associationsIdentifiers = [];
-                foreach ($items as $item) {
-                    $smartLevel = $itemSmartLevels[$item->getIdentifier()];
-                    $levels = explode('.', $smartLevel);
-                    $seq = array_pop($levels);
-                    $parentLevel = implode('.', $levels);
+        $associationsIdentifiers = [];
+        foreach ($items as $item) {
+            $smartLevel = $itemSmartLevels[$item->getIdentifier()];
+            $levels = explode('.', $smartLevel);
+            $seq = array_pop($levels);
+            $parentLevel = implode('.', $levels);
 
-                    if (!is_numeric($seq)) {
-                        $seq = null;
-                    }
-
-                    $children[$item->getIdentifier()] = $doc->getIdentifier();
-
-                    if (in_array($parentLevel, $itemSmartLevels, true)) {
-                        $assoc = $this->getEntityManager()->getRepository(LsAssociation::class)->findOneBy([
-                            'originNodeIdentifier' => $item->getIdentifier(),
-                            'type' => LsAssociation::CHILD_OF,
-                            'destinationNodeIdentifier' => $smartLevels[$parentLevel]->getIdentifier(),
-                        ]);
-
-                        if (null === $assoc) {
-                            $assoc = $smartLevels[$parentLevel]->addChild($item, null, $seq);
-                        } else {
-                            $assoc->setSequenceNumber($seq);
-                        }
-                    } else {
-                        $assoc = $this->getEntityManager()->getRepository(LsAssociation::class)->findOneBy([
-                            'originNodeIdentifier' => $item->getIdentifier(),
-                            'type' => LsAssociation::CHILD_OF,
-                            'destinationNodeIdentifier' => $item->getLsDoc()->getIdentifier(),
-                        ]);
-
-                        if (null === $assoc) {
-                            $assoc = $doc->createChildItem($item, null, $seq);
-                        } else {
-                            $assoc->setSequenceNumber($seq);
-                        }
-                    }
-
-                    $associationsIdentifiers[$assoc->getIdentifier()] = null;
-                }
-
-                $items[$doc->getIdentifier()] = $doc;
-                return $doc;
+            if (!is_numeric($seq)) {
+                $seq = null;
             }
-            case "standards": {
+
+            $children[$item->getIdentifier()] = $doc->getIdentifier();
+
+            if (in_array($parentLevel, $itemSmartLevels, true)) {
+                $assoc = $this->getEntityManager()->getRepository(LsAssociation::class)->findOneBy([
+                    'originNodeIdentifier' => $item->getIdentifier(),
+                    'type' => LsAssociation::CHILD_OF,
+                    'destinationNodeIdentifier' => $smartLevels[$parentLevel]->getIdentifier(),
+                ]);
+
+                if (null === $assoc) {
+                    $assoc = $smartLevels[$parentLevel]->addChild($item, null, $seq);
+                } else {
+                    $assoc->setSequenceNumber($seq);
+                }
+            } else {
+                $assoc = $this->getEntityManager()->getRepository(LsAssociation::class)->findOneBy([
+                    'originNodeIdentifier' => $item->getIdentifier(),
+                    'type' => LsAssociation::CHILD_OF,
+                    'destinationNodeIdentifier' => $item->getLsDoc()->getIdentifier(),
+                ]);
+
+                if (null === $assoc) {
+                    $assoc = $doc->createChildItem($item, null, $seq);
+                } else {
+                    $assoc->setSequenceNumber($seq);
+                }
+            }
+
+            $associationsIdentifiers[$assoc->getIdentifier()] = null;
+        }
+
+        $items[$doc->getIdentifier()] = $doc;
+        return $doc;
+    }
+
+    public function importAssociations(string $path): LsDoc
+    {
+        set_time_limit(180); // increase time limit for large files
+        $msg = "SpineImport::importAssociations";
+        $phpExcelObject = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
+        if (null === $phpExcelObject) {
+            throw new \RuntimeException('Cannot load spine from file'.$path);
+        }
+        $sheet = $phpExcelObject->getSheetByName('Spine_Template');
+        if (null === $sheet) {
+            throw new \RuntimeException('This workbook does not container a Learinng Spine.');
+        }
+        $this->var_error_log(sprintf("%s", $msg));
+        $doc = $this->saveDocument($sheet);
+        return $doc;
 /*
                 $sheet = $phpExcelObject->getSheetByName('CF Association');
                 if (null === $sheet) {
@@ -439,12 +473,6 @@ final class SpineImport
                 $this->checkRemovedItems($doc, $items);
                 $this->checkRemovedAssociations($doc, $associationsIdentifiers);
 */
-                return $doc;
-            }
-            default: {
-                throw new \RuntimeException(sprintf("%s, unrecognized target %s", $msg, $target));
-            }
-        }
     }
 
     private function saveDocument(Worksheet $sheet): LsDoc
