@@ -38,7 +38,7 @@ final class SpineImport
     private $levels = []; // Array of all items [int (0-based index into rows and columns) ['code' => string($skillCode), 'item' => LsItem($item), 'column' => int($column), 'level' => int($level the depth of this item relative to other items at the sam eparent level)]]
     private $levelIndex = []; // Index into $this->levels [string (abbreviated statement) ['row' => int, 'level' => int, 'smartLevel' => string, 'last' => int]]
 
-    private $hierarchyItemIdentifiers    = [];
+    private $hierarchyItemIdentifiers = []; // Array of the hierarchy items [string (abbreviated statement) [identifier, column] used to track whether an item already exists in the hierarchy
 
     public function __construct(EntityManagerInterface $entityManager)
     {
