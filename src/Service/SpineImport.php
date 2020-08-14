@@ -86,7 +86,8 @@ final class SpineImport
         }
         if (0 === $column) {
             $this->rootLevel++;
-            $key = $item->getAbbreviatedStatement();
+            $key = $item->getIdentifier();
+//            $key = $item->getAbbreviatedStatement();
             $this->levelIndex[$key] = array('row' => 0, 'level' => 1, 'smartLevel' => "1", 'last' => 0);
             $this->var_error_log(sprintf("%s\t\t[%s] row[%d] index[%s][row => %d, level => %d, smartLevel => %s, last => %d]\n", $msg, $action, $this->levelIndex[$key]['row'], $key, $this->levelIndex[$key]['row'], $this->levelIndex[$key]['level'], $this->levelIndex[$key]['smartLevel'], $this->levelIndex[$key]['last']));
             return $this->rootLevel;
@@ -103,9 +104,11 @@ final class SpineImport
             $this->var_error_log(sprintf("%s\t\t[%s] row[%d] index[%s][row => %d, level => %d, smartLevel => %s, last => %d]\n", $msg, $action, $this->levelIndex['null']['row'], "null", $this->levelIndex['null']['row'], $this->levelIndex['null']['level'], $this->levelIndex['null']['smartLevel'], $this->levelIndex['null']['last']));
             return -1;
         }
-        $key = $item->getAbbreviatedStatement();
+        $key = $item->getIdentifier();
+//        $key = $item->getAbbreviatedStatement();
         $parent = $this->getParent($item, $row, $column);
-        $parentKey = $parent->getAbbreviatedStatement();
+        $parentKey = $parent->getIdentifier();
+//        $parentKey = $parent->getAbbreviatedStatement();
         $this->var_error_log(sprintf("%s\t\t[%s] row[%d] found parent %s for item %s", $msg, $action, $realRow, $parentKey, $key));
         $this->levelIndex[$parentKey]['last'] = $realRow;
         $smartLevel = sprintf("%s.1", $this->levelIndex[$parentKey]['smartLevel']);
@@ -122,7 +125,8 @@ final class SpineImport
         if (null === $item) {
             $key = "null";
         } else {
-            $key = $item->getAbbreviatedStatement();
+            $key = $item->getIdentifier();
+//            $key = $item->getAbbreviatedStatement();
         }
         $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] lookup item %s in the INDEX", $msg, $action, $realRow, $key));
         $match = $this->levelIndex[$key];
@@ -156,7 +160,8 @@ final class SpineImport
         if (null === $item) {
             $key = "null";
         } else {
-            $key = $item->getAbbreviatedStatement();
+            $key = $item->getIdentifier();
+//            $key = $item->getAbbreviatedStatement();
         }
         $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] find parent for %s", $msg, $action, $realRow, $key));
         while ($priorRow >= $realRow-$column) {
@@ -165,7 +170,7 @@ final class SpineImport
                 $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] ineligible null predecessor at row[%d] for item %s", $msg, $action, $realRow, $priorRow--, $key));
                 continue;
             }
-            $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] found parent %s for item %s at row[%d, %d]", $msg, $action, $realRow, $parent->getAbbreviatedStatement(), $key, $priorRow, $column));
+            $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] found parent %s for item %s at row[%d, %d]", $msg, $action, $realRow, $parent->getIdentifier() /* $parent->getAbbreviatedStatement()*/, $key, $priorRow, $column));
             return $parent;
         }
         return null;
@@ -185,7 +190,8 @@ final class SpineImport
         if (null === $item) {
             $key = "null";
         } else {
-            $key = $item->getAbbreviatedStatement();
+            $key = $item->getIdentifier();
+//            $key = $item->getAbbreviatedStatement();
         }
         $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] adding item %s to INDEX", $msg, $action, $realRow, $key));
         switch ($column) {
@@ -197,7 +203,7 @@ final class SpineImport
             if (null === $predecessor) {
                 throw new RuntimeException(sprintf("%s\t\t\t[%s] row[%d, %d] no predecessor found for item %s", $msg, $action, $realRow, $column, $key));
             }
-            $predecessorKey = $predecessor->getAbbreviatedStatement();
+            $predecessorKey = $predecessor->getIdentifier(); // $predecessor->getAbbreviatedStatement();
             $parentKey = $predecessorKey;
             $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] PARENT[%s][row => %d, level => %d, smartLevel => %s, last => %d]\n",
                     $msg, $action, $realRow, $parentKey, $this->levelIndex[$parentKey]['row'], $this->levelIndex[$parentKey]['level'],
@@ -211,7 +217,8 @@ final class SpineImport
                 if (null === $parent) {
                     throw new RuntimeException(sprintf("%s\t\t\t]%s] row[%d,%d] no parent for item %s", $msg, $action, $realRow, $column, $key));
                 }
-                $parentKey = $parent->getAbbreviatedStatement();
+                $parentKey = $parent->getIdentifier();
+//                $parentKey = $parent->getAbbreviatedStatement();
                 $match = $this->levelIndex[$parentKey];
                 if (true === boolVal($match) && array_key_exists('last', $match)) {
                     $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] found parent %s for item %s", $msg, $action, $realRow, $parentKey, $key));
@@ -221,7 +228,7 @@ final class SpineImport
                     if ($predecessorColumn !== $column) {
                         $level = 1;
                     } else {
-                        $predecessorKey = $predecessor->getAbbreviatedStatement();
+                        $predecessorKey = $predecessor->getIdentifier(); // $predecessor->getAbbreviatedStatement();
                         $level = 1 + $this->levelIndex[$predecessorKey]['level'];
                         }
                     }
@@ -259,16 +266,17 @@ final class SpineImport
             if (null === $item) {
                 $action = "0";
                 $level = -1;
-                $statement = "null";
+                $key = "null";
             } else {
                 $action = "N";
-                $statement = $item->getAbbreviatedStatement();
+                $key = $item->getIdentifier();
+//                $statement = $item->getAbbreviatedStatement();
             }
             $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => $level);
             $this->levels[$realRow] = $rowValue;
             $msg = sprintf("%s\t[%s] row[%d] array(code => %s, column => %d, level => %d, item => %s)\n",
                 $msg, $action, $realRow, $this->levels[$realRow]['code'], $this->levels[$realRow]['column'],
-                $this->levels[$realRow]['level'], $statement);
+                $this->levels[$realRow]['level'], $key);
             $this->var_error_log($msg);
             return;
         }
@@ -283,21 +291,22 @@ final class SpineImport
             $this->levels[$realRow] = $rowValue;
             $this->var_error_log(sprintf("%s\t[%s] row[%d] array(code => %s, column => %d, level => %d, item => %s)\n",
                 $msg, $action, $realRow, $this->levels[$realRow]['code'], $this->levels[$realRow]['column'],
-                $this->levels[$realRow]['level'], $this->levels[$realRow]['item']->getAbbreviatedStatement()));
+        $this->levels[$realRow]['level'], $this->levels[$realRow]['item']->getIdentifier() /*getAbbreviatedStatement()*/));
             return;
         } else {
             // Remaining items are repeats.  
             $action = "R";
             if (null === $item) {
-                $statement = "null";
+                $key = "null";
             } else {
-                $statement = $item->getAbbreviatedStatement();
+                $key = $item->getIdentifier();
+//                $statement = $item->getAbbreviatedStatement();
             }
             $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => $repeated);
             $this->levels[$realRow] = $rowValue;
             $msg = sprintf("%s\t[%s] row[%d] array(code => %s, column => %d, level => %d, item => %s)\n",
                 $msg, $action, $realRow, $this->levels[$realRow]['code'], $this->levels[$realRow]['column'],
-                $this->levels[$realRow]['level'], $statement);
+        $this->levels[$realRow]['level'], $key /* $statement*/);
             $this->var_error_log($msg);
             return;
         }
@@ -334,7 +343,6 @@ final class SpineImport
         $itemSmartLevels = [];
         $children = [];
         $levels[] = array(1,1,1,1,1);
-
         /** @var LsItem[] $smartLevels */
         $smartLevels = [];
         $sheet = $phpExcelObject->getSheetByName('Spine_Template');
@@ -364,8 +372,8 @@ final class SpineImport
                 if (null === $this->hierarchyItemIdentifiers[$key]) {
                     $this->hierarchyItemIdentifiers[$key] = array('identifier' => $itemIdentifier, 'column' => $column);
                 }
-                if (array_key_exists('smartLevel', $this->levelIndex[$key])) {
-                    $smartLevel = $this->levelIndex[$key]['smartLevel'];
+                if (array_key_exists('smartLevel', $this->levelIndex[$itemIdentifier])) {
+                    $smartLevel = $this->levelIndex[$itemIdentifier]['smartLevel'];
                     $items[$itemIdentifier] = $item;
                     $smartLevels[$smartLevel] = $item;
                     $itemSmartLevels[$itemIdentifier] = $smartLevel;
@@ -381,8 +389,8 @@ final class SpineImport
             if (null === $this->hierarchyItemIdentifiers[$key]) {
                 $this->hierarchyItemIdentifiers[$key] = array('identifier' => $itemIdentifier, 'column' => $column);
             }
-            if (array_key_exists('smartLevel', $this->levelIndex[$key])) {
-                $smartLevel = $this->levelIndex[$key]['smartLevel'];
+            if (array_key_exists('smartLevel', $this->levelIndex[$itemIdentifier])) {
+                $smartLevel = $this->levelIndex[$itemIdentifier]['smartLevel'];
                 $items[$itemIdentifier] = $item;
                 $smartLevels[$smartLevel] = $item;
                 $itemSmartLevels[$itemIdentifier] = $smartLevel;
