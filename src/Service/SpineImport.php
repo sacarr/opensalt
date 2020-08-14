@@ -38,11 +38,6 @@ final class SpineImport
     private $levels = []; // Array of all items [int (0-based index into rows and columns) ['code' => string($skillCode), 'item' => LsItem($item), 'column' => int($column), 'level' => int($level the depth of this item relative to other items at the sam eparent level)]]
     private $levelIndex = []; // Index into $this->levels [string (abbreviated statement) ['row' => int, 'level' => int, 'smartLevel' => string, 'last' => int]]
 
-//    private $levels = [];
-//    private int $rowOffset;
-//    private $levelIndex = [];
-//    private int $rootLevel;
-
     private $hierarchyItemIdentifiers    = [];
 
     public function __construct(EntityManagerInterface $entityManager)
@@ -367,8 +362,7 @@ final class SpineImport
                 $key = $item->getAbbreviatedStatement();
                 $itemIdentifier = $item->getIdentifier();
                 if (null === $this->hierarchyItemIdentifiers[$key]) {
-                    // Item is already in the catalog
-                    $this->hierarchyItemIdentifiers[$key] = $itemIdentifier;
+                    $this->hierarchyItemIdentifiers[$key] = array('identifier' => $itemIdentifier, 'column' => $column);
                 }
                 if (array_key_exists('smartLevel', $this->levelIndex[$key])) {
                     $smartLevel = $this->levelIndex[$key]['smartLevel'];
@@ -385,8 +379,7 @@ final class SpineImport
             $key = $item->getAbbreviatedStatement();
             $itemIdentifier = $item->getIdentifier();
             if (null === $this->hierarchyItemIdentifiers[$key]) {
-                // Item is already in the catalog
-                $this->hierarchyItemIdentifiers[$key] = $itemIdentifier;
+                $this->hierarchyItemIdentifiers[$key] = array('identifier' => $itemIdentifier, 'column' => $column);
             }
             if (array_key_exists('smartLevel', $this->levelIndex[$key])) {
                 $smartLevel = $this->levelIndex[$key]['smartLevel'];
@@ -511,15 +504,15 @@ final class SpineImport
         $msg = sprintf("SpineImport::saveHierarchyItem() ");
         /** @var LsItem[] $items */
         $item = null;
-        $humanCodingScheme = null;
         $identifier = null;
         $itemTypeTitle = $this->getCellValueOrNull($sheet, $column, 6);
         $statement = $this->getCellValueOrNull($sheet, $column, $row);
-        $identifier = $this->hierarchyItemIdentifiers[$statement];
+        $identifier = $this->hierarchyItemIdentifiers[$statement]['identifier'];
+        $itemType = $this->hierarchyItemIdentifiers[$statement]['column'];
         if (null === $statement) {
             return null;
         }
-        if ( !empty($identifier) && Uuid::isValid($identifier) ) {
+        if ( !empty($identifier) && Uuid::isValid($identifier) && $column === $itemType) {
             $item = $this->getEntityManager()->getRepository(LsItem::class)
                 ->findOneBy(['identifier' => $identifier, 'lsDocIdentifier' => $doc->getIdentifier()]);
             if ( $item !== null) {
@@ -532,13 +525,9 @@ final class SpineImport
             }
         }
         $item = $doc->createItem();
-
         if (null !== $statement) {
             $item->setFullStatement($statement);
             $item->setAbbreviatedStatement($statement);
-        }
-        if (null !== $humanCodingScheme){
-            $item->setHumanCodingScheme($humanCodingScheme);
         }
         $item->setLanguage("En");
         $itemType = $this->findItemType($itemTypeTitle);
