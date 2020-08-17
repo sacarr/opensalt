@@ -39,7 +39,7 @@ final class SpineImport
     private $levelIndex = []; // Index into $this->levels [string (abbreviated statement) ['row' => int, 'level' => int, 'smartLevel' => string, 'last' => int]]
 
     private $hierarchyItemIdentifiers = []; // Array of the hierarchy items [string (abbreviated statement) [identifier, column] used to track whether an item already exists in the hierarchy
-
+    
     public function __construct(EntityManagerInterface $entityManager)
     {
         $this->rowOffset = 6;
@@ -87,7 +87,6 @@ final class SpineImport
         if (0 === $column) {
             $this->rootLevel++;
             $key = $item->getIdentifier();
-//            $key = $item->getAbbreviatedStatement();
             $this->levelIndex[$key] = array('row' => 0, 'level' => 1, 'smartLevel' => "1", 'last' => 0);
             $this->var_error_log(sprintf("%s\t\t[%s] row[%d] index[%s][row => %d, level => %d, smartLevel => %s, last => %d]\n", $msg, $action, $this->levelIndex[$key]['row'], $key, $this->levelIndex[$key]['row'], $this->levelIndex[$key]['level'], $this->levelIndex[$key]['smartLevel'], $this->levelIndex[$key]['last']));
             return $this->rootLevel;
@@ -105,10 +104,8 @@ final class SpineImport
             return -1;
         }
         $key = $item->getIdentifier();
-//        $key = $item->getAbbreviatedStatement();
         $parent = $this->getParent($item, $row, $column);
         $parentKey = $parent->getIdentifier();
-//        $parentKey = $parent->getAbbreviatedStatement();
         $this->var_error_log(sprintf("%s\t\t[%s] row[%d] found parent %s for item %s", $msg, $action, $realRow, $parentKey, $key));
         $this->levelIndex[$parentKey]['last'] = $realRow;
         $smartLevel = sprintf("%s.1", $this->levelIndex[$parentKey]['smartLevel']);
@@ -126,7 +123,6 @@ final class SpineImport
             $key = "null";
         } else {
             $key = $item->getIdentifier();
-//            $key = $item->getAbbreviatedStatement();
         }
         $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] lookup item %s in the INDEX", $msg, $action, $realRow, $key));
         $match = $this->levelIndex[$key];
@@ -161,7 +157,6 @@ final class SpineImport
             $key = "null";
         } else {
             $key = $item->getIdentifier();
-//            $key = $item->getAbbreviatedStatement();
         }
         $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] find parent for %s", $msg, $action, $realRow, $key));
         while ($priorRow >= $realRow-$column) {
@@ -170,7 +165,7 @@ final class SpineImport
                 $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] ineligible null predecessor at row[%d] for item %s", $msg, $action, $realRow, $priorRow--, $key));
                 continue;
             }
-            $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] found parent %s for item %s at row[%d, %d]", $msg, $action, $realRow, $parent->getIdentifier() /* $parent->getAbbreviatedStatement()*/, $key, $priorRow, $column));
+            $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] found parent %s for item %s at row[%d, %d]", $msg, $action, $realRow, $parent->getIdentifier(), $key, $priorRow, $column));
             return $parent;
         }
         return null;
@@ -191,7 +186,6 @@ final class SpineImport
             $key = "null";
         } else {
             $key = $item->getIdentifier();
-//            $key = $item->getAbbreviatedStatement();
         }
         $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] adding item %s to INDEX", $msg, $action, $realRow, $key));
         switch ($column) {
@@ -203,7 +197,7 @@ final class SpineImport
             if (null === $predecessor) {
                 throw new RuntimeException(sprintf("%s\t\t\t[%s] row[%d, %d] no predecessor found for item %s", $msg, $action, $realRow, $column, $key));
             }
-            $predecessorKey = $predecessor->getIdentifier(); // $predecessor->getAbbreviatedStatement();
+            $predecessorKey = $predecessor->getIdentifier();
             $parentKey = $predecessorKey;
             $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] PARENT[%s][row => %d, level => %d, smartLevel => %s, last => %d]\n",
                     $msg, $action, $realRow, $parentKey, $this->levelIndex[$parentKey]['row'], $this->levelIndex[$parentKey]['level'],
@@ -218,20 +212,40 @@ final class SpineImport
                     throw new RuntimeException(sprintf("%s\t\t\t]%s] row[%d,%d] no parent for item %s", $msg, $action, $realRow, $column, $key));
                 }
                 $parentKey = $parent->getIdentifier();
-//                $parentKey = $parent->getAbbreviatedStatement();
                 $match = $this->levelIndex[$parentKey];
                 if (true === boolVal($match) && array_key_exists('last', $match)) {
                     $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] found parent %s for item %s", $msg, $action, $realRow, $parentKey, $key));
                     $predecessorRow = $this->levelIndex[$parentKey]['last'];
                     $predecessor = $this->levels[$predecessorRow]['item'];
                     $predecessorColumn = $this->levels[$predecessorRow]['column'];
-                    if ($predecessorColumn !== $column) {
-                        $level = 1;
-                    } else {
-                        $predecessorKey = $predecessor->getIdentifier(); // $predecessor->getAbbreviatedStatement();
-                        $level = 1 + $this->levelIndex[$predecessorKey]['level'];
-                        }
+                    $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d, %d] found predecessor %s for item %s last updated at row %d, column %d",
+                        $msg, $action, $realRow, $column, $parent->getAbbreviatedStatement(), $item->getAbbreviatedStatement(), $predecessorRow, $predecessorColumn));
+                        switch (true) {
+                        case ( $column - $predecessorColumn) > 0:  // predecessor to the left
+                            if ( $column === 5 ) {  // Boundary condition.  No item is to the right of column 5. DO NOT start another level
+                                $predecessorKey = $predecessor->getIdentifier();
+                                $level = 1 + $this->levelIndex[$predecessorKey]['level'];
+                            } else {
+                                $level = 1;
+                            }
+                            $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] %s to the left of current item (column [%d] - predecessor column[%d] = %d).  level %d", 
+                                $msg, $action, $realRow, $predecessor->getAbbreviatedStatement(), $column, $predecessorColumn, ($column - $predecessorColumn), $level));
+                            break;
+                        case ( $column - $predecessorColumn) == 0: // predecessor directly above
+                            $predecessorKey = $predecessor->getIdentifier();
+                            $level = 1 + $this->levelIndex[$predecessorKey]['level'];
+                            $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] %s above current item (column [%d] - predecessor column[%d] = %d).  level %d", 
+                                $msg, $action, $realRow, $predecessor->getAbbreviatedStatement(),$column, $predecessorColumn, ($column - $predecessorColumn), $level));
+                            break;
+                        break;
+                        case ($column - $predecessorColumn ) < 0: // predecessor to the right
+                            $predecessorKey = $predecessor->getIdentifier();
+                            $level = 1 + $this->levelIndex[$predecessorKey]['level'];
+                            $this->var_error_log(sprintf("%s\t\t\t[%s] row[%d] %s to the right of current item (column [%d] - predecessor column[%d] = %d).  level %d", 
+                                $msg, $action, $realRow, $predecessor->getAbbreviatedStatement(), $column, $predecessorColumn, ($column - $predecessorColumn), $level));
+                            break;  
                     }
+                }
                 if (false === array_key_exists('smartLevel', $match)) {
                     throw new RuntimeException(sprintf("%s\t\t\t[%s] row[%d] no smart level found for item parent %s", $msg, $action, $row, $parentKey));
                 }
@@ -270,7 +284,6 @@ final class SpineImport
             } else {
                 $action = "N";
                 $key = $item->getIdentifier();
-//                $statement = $item->getAbbreviatedStatement();
             }
             $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => $level);
             $this->levels[$realRow] = $rowValue;
@@ -300,7 +313,6 @@ final class SpineImport
                 $key = "null";
             } else {
                 $key = $item->getIdentifier();
-//                $statement = $item->getAbbreviatedStatement();
             }
             $rowValue = array('code' => $skillCode, 'item' => $item, 'column' => $column, 'level' => $repeated);
             $this->levels[$realRow] = $rowValue;
@@ -342,7 +354,8 @@ final class SpineImport
         $items = [];
         $itemSmartLevels = [];
         $children = [];
-        $levels[] = array(1,1,1,1,1);
+        $levels = [];
+//        $levels[] = array(1,1,1,1,1);
         /** @var LsItem[] $smartLevels */
         $smartLevels = [];
         $sheet = $phpExcelObject->getSheetByName('Spine_Template');
