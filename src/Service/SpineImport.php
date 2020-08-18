@@ -381,16 +381,16 @@ final class SpineImport
                 if (null === $item) {
                     continue;
                 }
-                $key = $item->getAbbreviatedStatement();
-                $itemIdentifier = $item->getIdentifier();
-                if (null === $this->hierarchyItemIdentifiers[$key]) {
-                    $this->hierarchyItemIdentifiers[$key] = array('identifier' => $itemIdentifier, 'column' => $column);
-                }
-                if (array_key_exists('smartLevel', $this->levelIndex[$itemIdentifier])) {
-                    $smartLevel = $this->levelIndex[$itemIdentifier]['smartLevel'];
-                    $items[$itemIdentifier] = $item;
+//                $key = $item->getAbbreviatedStatement();
+//                $itemIdentifier = $item->getIdentifier();
+//                if (null === $this->hierarchyItemIdentifiers[$key]) {
+//                    $this->hierarchyItemIdentifiers[$key] = array('identifier' => $itemIdentifier, 'column' => $column);
+//                }
+                if (array_key_exists('smartLevel', $this->levelIndex[$item->getIdentifier()])) {
+                    $smartLevel = $this->levelIndex[$item->getIdentifier()]['smartLevel'];
+                    $items[$item->getIdentifier()] = $item;
                     $smartLevels[$smartLevel] = $item;
-                    $itemSmartLevels[$itemIdentifier] = $smartLevel;
+                    $itemSmartLevels[$item->getIdentifier()] = $smartLevel;
                 }
             }
             $item = $this->saveSkill($sheet, $doc, $row);
@@ -398,16 +398,16 @@ final class SpineImport
             if (null === $item) {
                 continue;
             }
-            $key = $item->getAbbreviatedStatement();
-            $itemIdentifier = $item->getIdentifier();
-            if (null === $this->hierarchyItemIdentifiers[$key]) {
-                $this->hierarchyItemIdentifiers[$key] = array('identifier' => $itemIdentifier, 'column' => $column);
-            }
-            if (array_key_exists('smartLevel', $this->levelIndex[$itemIdentifier])) {
-                $smartLevel = $this->levelIndex[$itemIdentifier]['smartLevel'];
-                $items[$itemIdentifier] = $item;
+//            $key = $item->getAbbreviatedStatement();
+//            $itemIdentifier = $item->getIdentifier();
+//            if (null === $this->hierarchyItemIdentifiers[$key]) {
+//                $this->hierarchyItemIdentifiers[$key] = array('identifier' => $itemIdentifier, 'column' => $column);
+//            }
+            if (array_key_exists('smartLevel', $this->levelIndex[$item->getIdentifier()])) {
+                $smartLevel = $this->levelIndex[$item->getIdentifier()]['smartLevel'];
+                $items[$item->getIdentifier()] = $item;
                 $smartLevels[$smartLevel] = $item;
-                $itemSmartLevels[$itemIdentifier] = $smartLevel;
+                $itemSmartLevels[$item->getIdentifier()] = $smartLevel;
             }
         }
                 
@@ -488,7 +488,31 @@ final class SpineImport
 
     private function saveDocument(Worksheet $sheet): LsDoc
     {
-        $id = $this->getCellValueOrNull($sheet, 2, 3);
+        $msg = "SpineImport::saveDocument()";
+        $fieldNames = [
+            'title'         => 1,
+            'subject'       => 2,
+            'identifier'    => 3,
+            'version'       => 4,
+        ];
+
+        $id = $this->getCellValueOrNull($sheet, 2, $fieldNames['identifier']);
+        if (!empty($id)) {
+            $id = strtolower($id);
+        } else {
+            throw new \InvalidArgumentException(sprintf("%s, The identifier, %s, must not be an empty string.", $msg, $id));
+        }
+        if (is_string($id) ) {
+            if ( Uuid::isValid($id) ) {
+                $id = Uuid::fromString($id)->toString();
+            } else {
+                throw new \InvalidArgumentException(sprintf("%s, The identifier, %s, must be a valid string representation of a UUID.", $msg, $id));
+            }
+        } else {
+            throw new \InvalidArgumentException(sprintf("%s, The identifier, %s, must be a string.", $msg, $id));
+        }
+
+        $this->var_error_log(sprintf("%s\t\t[S] Initializing Document %s", $msg, $id));
         $docRepo = $this->getEntityManager()->getRepository(LsDoc::class);
         $doc = $docRepo->findOneByIdentifier($id);
 
@@ -500,10 +524,18 @@ final class SpineImport
         $doc->setPublisher("Houghton Mifflin Harcourt, LLC");
         $doc->setLanguage("EN");
         $doc->setAdoptionStatus("Private Draft");
-        $doc->setTitle($this->getCellValueOrNull($sheet, 2, 1));
-        $doc->setDescription($this->getCellValueOrNull($sheet, 2, 1));
-        $doc->setSubject($this->getCellValueOrNull($sheet, 2, 2));
-        $doc->setVersion($this->getCellValueOrNull($sheet, 2, 4));
+        $doc->setTitle($this->getCellValueOrNull($sheet, 2, $fieldNames['title']));
+        $doc->setDescription($this->getCellValueOrNull($sheet, 2, $fieldNames['title']));
+        $subject = sprintf("%s", $this->getCellValueOrNull($sheet, 2, $fieldNames['subject']));
+        if (empty($subject)) {
+            $subject = sprintf("Missing Subject");
+        }
+        if ( !is_string($subject) ) {
+            $subject = sprintf("%s", $subject);
+        }
+        $this->var_error_log(sprintf("%s\t\t[S] Initializing Document subject to %s", $msg, $subject));
+        $doc->setSubject($this->getCellValueOrNull($sheet, 2, $fieldNames['subject']));
+        $doc->setVersion($this->getCellValueOrNull($sheet, 2, $fieldNames['version']));
         $officialURI = "https://www.hmhco.com/learningspines/".$id;
         $doc->setOfficialUri($officialURI);
         $statusStart = new \DateTime();
@@ -520,11 +552,13 @@ final class SpineImport
     private function saveHierarchyItem(Worksheet $sheet, lsDoc $doc, int $row, int $column): ?LsItem
     {
         $msg = sprintf("SpineImport::saveHierarchyItem() ");
+        $realRow = ($this->rowOffset*($row-7))+($column-1);
         /** @var LsItem[] $items */
         $item = null;
         $identifier = null;
         $itemTypeTitle = $this->getCellValueOrNull($sheet, $column, 6);
         $statement = $this->getCellValueOrNull($sheet, $column, $row);
+        $this->var_error_log(sprintf("%s\t[L] row[%d] column[%d] lookup hierarchy item [%s]", $msg, $realRow, $column, $statement));
         $identifier = $this->hierarchyItemIdentifiers[$statement]['identifier'];
         $itemType = $this->hierarchyItemIdentifiers[$statement]['column'];
         if (null === $statement) {
@@ -539,6 +573,7 @@ final class SpineImport
                     $msg = sprintf("%s %s !== %s", $msg, $statement, $itemStatement);
                     throw new \RuntimeException($msg);
                 }
+                $this->var_error_log(sprintf("%s\t[L] row[%d] column[%d] found hierarchy item [%s: %s]", $msg, $realRow, $column, $item->getAbbreviatedStatement(), $item->getIdentifier()));
                 return $item;
             }
         }
@@ -553,7 +588,8 @@ final class SpineImport
         if (null !== $itemTypeTitle) {
             $item->setItemType($itemType);
         }
-//        $this->addAdditionalFields($row, $item, $sheet);
+        $this->var_error_log(sprintf("%s\t[S] row[%d] column[%d] Add hierarchy item [%s: %s]", $msg, $realRow, $column, $item->getIdentifier(), $item->getAbbreviatedStatement()));
+        $this->hierarchyItemIdentifiers[$statement] = array('identifier' => $item->getIdentifier(), 'column' => $column);
         $this->getEntityManager()->persist($item);
         $this->getEntityManager()->flush();
         return $item;
@@ -561,6 +597,8 @@ final class SpineImport
 
     private function saveSkill(Worksheet $sheet, LsDoc $doc, int $row): ?LsItem
     {
+        $msg = "SpineImport::saveSkill()";
+        $realRow = ($this->rowOffset*($row-7))+5;
         $item = null;
         $itemTypeTitle = "Skill";
         $skillTitle = $this->getCellValueOrNull($sheet, 6, $row);
@@ -569,8 +607,6 @@ final class SpineImport
         $skillCode = $this->getCellValueOrNull($sheet, 9, $row);
         $skillLowerGrade = $this->getCellValueOrNull($sheet, 10, $row);
         $skilUpperGrade = $this->getCellValueOrNull($sheet, 11, $row);
-        $skillKnowledgeType = $this->getCellValueOrNull($sheet, 12, $row);
-        $skillEmphasis = $this->getCellValueOrNull($sheet, 13, $row);
         if (empty($skillGuid)) {
             $skillGuid = null;
         } elseif (Uuid::isValid($skillGuid)) {
@@ -601,10 +637,9 @@ final class SpineImport
         $itemType = $this->findItemType($itemTypeTitle);
         $item->setItemType($itemType);
 
-        // col 12 - licence
-
-        // col 13+ - additional fields
-//        $this->addAdditionalFields($row, $item, $sheet);
+        $this->var_error_log(sprintf("%s\t\t\t[S] row[%d] skill: [%s: %s]", $msg, $realRow, $item->getIdentifier(), $item->getAbbreviatedStatement()));
+        $this->addAdditionalFields($row, $item, $sheet);
+        $this->hierarchyItemIdentifiers[$item->getAbbreviatedStatement()] = array('identifier' => $item->getIdentifier(), 'column' => 6);
 
         $this->getEntityManager()->persist($item);
         $this->getEntityManager()->flush();
@@ -810,16 +845,17 @@ final class SpineImport
 
     private function addAdditionalFields(int $row, LsItem $item, Worksheet $sheet): void
     {
-        $column = 13;
+        $columns = array(12, 13);
 
-        while (null !== $this->getCellValueOrNull($sheet, $column, 1)) {
-            $customField = $this->getCellValueOrNull($sheet, $column, 1);
-
-            if (null !== $customField && in_array($customField, self::$itemCustomFields, true)) {
+        foreach ($columns as $column) {
+            $fieldName = strtolower(preg_replace('/\s+/', '_', $this->getCellValueOrNull($sheet, $column, $this->rowOffset)));
+            if ( !empty($fieldName) && in_array($fieldName, self::$itemCustomFields, true) ) {
                 $value = $this->getCellValueOrNull($sheet, $column, $row);
-                $item->setAdditionalField($customField, $value);
+                if ( !empty($value)) {
+                    $this->var_error_log(sprintf("SpineImport::addAdditionalFields()\t[A] row[%d] column[%d] custom field %s = %s", ($row - 2), $column, $fieldName, $value));
+                    $item->setAdditionalField($fieldName, $value);
+                }
             }
-            ++$column;
         }
     }
 
