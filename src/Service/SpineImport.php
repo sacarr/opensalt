@@ -327,6 +327,7 @@ final class SpineImport
     public function importSpine(string $path): LsDoc
     {
         set_time_limit(180); // increase time limit for large files
+        ini_set('memory_limit','4G');  // Learning Spines use 1k * rows * 830+ columns  
         $msg = "SpineImport::importSpine()";
         $phpExcelObject = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
         if (null === $phpExcelObject) {
@@ -344,6 +345,7 @@ final class SpineImport
     public function importSkills(string $path): LsDoc
     {
         set_time_limit(180); // increase time limit for large files
+        ini_set('memory_limit','4G');  // Learning Spines use 1k * rows * 830+ columns  
         $msg = "SpineImport::importSkills";
 
         $phpExcelObject = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
@@ -355,7 +357,6 @@ final class SpineImport
         $itemSmartLevels = [];
         $children = [];
         $levels = [];
-//        $levels[] = array(1,1,1,1,1);
         /** @var LsItem[] $smartLevels */
         $smartLevels = [];
         $sheet = $phpExcelObject->getSheetByName('Spine_Template');
@@ -459,6 +460,7 @@ final class SpineImport
     public function importAssociations(string $path): LsDoc
     {
         set_time_limit(180); // increase time limit for large files
+        ini_set('memory_limit','4G');  // Learning Spines use 1k * rows * 830+ columns  
         $msg = "SpineImport::importAssociations";
         $phpExcelObject = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
         if (null === $phpExcelObject) {
@@ -470,23 +472,18 @@ final class SpineImport
         }
         $this->var_error_log(sprintf("%s", $msg));
         $doc = $this->saveDocument($sheet);
+        $items[$doc->getIdentifier()] = $doc->getLsItems();
+        $children[$doc->getIdentifier()] = $doc->getIdentifier();
+        $lastRow = $sheet->getHighestRow();
+//        for ($i = 7; $i <= $lastRow; ++$i) {
+//            $assoc = $this->saveAssociation($sheet, $doc, $i, $items, $children);
+//            if (null !== $assoc) {
+//                $associationsIdentifiers[$assoc->getIdentifier()] = null;
+//            }
+//        }
+//                $this->checkRemovedItems($doc, $items);
+//                $this->checkRemovedAssociations($doc, $associationsIdentifiers);
         return $doc;
-/*
-                $sheet = $phpExcelObject->getSheetByName('CF Association');
-                if (null === $sheet) {
-                    throw new \RuntimeException('CF Association sheet does not exist in the workbook');
-                }
-                $lastRow = $sheet->getHighestRow();
-
-                for ($i = 2; $i <= $lastRow; ++$i) {
-                    $assoc = $this->saveAssociation($sheet, $doc, $i, $items, $children);
-                    if (null !== $assoc) {
-                        $associationsIdentifiers[$assoc->getIdentifier()] = null;
-                    }
-                }
-                $this->checkRemovedItems($doc, $items);
-                $this->checkRemovedAssociations($doc, $associationsIdentifiers);
-*/
     }
 
     private function saveDocument(Worksheet $sheet): LsDoc
@@ -740,7 +737,7 @@ final class SpineImport
             return null;
         }
 
-        return $cell->getValue();
+        return sprintf("%s", $cell->getValue());
     }
 
     private function checkRemovedItems(LsDoc $doc, array $array): void
