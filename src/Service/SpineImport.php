@@ -16,10 +16,11 @@ use phpDocumentor\Reflection\Types\Null_;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xls\Worksheet as XlsWorksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Worksheet as XlsxWorksheet;
+use Proxies\__CG__\App\Entity\Framework\LsDefAssociationGrouping as FrameworkLsDefAssociationGrouping;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Psr\Log;
-
+use Ramsey\Uuid\Rfc4122\UuidV4;
 
 final class SpineImport
 {
@@ -39,7 +40,7 @@ final class SpineImport
     private $levelIndex = []; // Index into $this->levels [string (abbreviated statement) ['row' => int, 'level' => int, 'smartLevel' => string, 'last' => int]]
 
     private $hierarchyItemIdentifiers = []; // Array of the hierarchy items [string (abbreviated statement) [identifier, column] used to track whether an item already exists in the hierarchy
-    
+    private $documents = [];
     public function __construct(EntityManagerInterface $entityManager)
     {
         $this->rowOffset = 6;
@@ -53,6 +54,61 @@ final class SpineImport
                 return $cf->getName();
             }, $customFieldsArray);
         }
+        $this->documents = [
+            'alabama'           => array('ela'  =>  Uuid::fromString('c64926b7-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6492c21-d7cb-11e8-824f-0242ac160002')),
+            'alaska'            => array('ela'  =>  Uuid::fromString('c64930d4-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c649e0a2-d7cb-11e8-824f-0242ac160002')),
+            'arizona'           => array('ela'  =>  Uuid::fromString('c664d506-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6498415-d7cb-11e8-824f-0242ac160002')),
+            'arkansas'          => array('ela'  =>  Uuid::fromString('c664b830-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c649def2-d7cb-11e8-824f-0242ac160002')),
+            'california'        => array('ela'  =>  Uuid::fromString('c6486d6e-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6487102-d7cb-11e8-824f-0242ac160002')),
+            'colorado'          => array('ela'  =>  Uuid::fromString('c664a5c0-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c649e65b-d7cb-11e8-824f-0242ac160002')),
+            'connecticut'       => array('ela'  =>  Uuid::fromString('c6487f78-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6487bda-d7cb-11e8-824f-0242ac160002')),
+            'delaware'          => array('ela'  =>  Uuid::fromString('c6488303-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c648867e-d7cb-11e8-824f-0242ac160002')),
+            'florida'           => array('ela'  =>  Uuid::fromString('c649a48e-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6399b4d-d7cb-11e8-824f-0242ac160002')),
+            'georgia'           => array('ela'  =>  Uuid::fromString('355bdb74-46f9-11e7-9dd8-56d474a21250'),   'math'  =>  Uuid::fromString('23a8e45a-9d5a-11e7-81bc-064e21a83c7c')),
+            'hawaii'            => array('ela'  =>  Uuid::fromString('c608ad09-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c608afbe-d7cb-11e8-824f-0242ac160002')),
+            'hmh'               => array('ela'  =>  Uuid::fromString('63c2b7d0-cd69-4e8a-9761-c90623104b8c'),   'math'  =>  Uuid::fromString('01b3eaba-1353-4f4b-9833-f60c393230bc')),
+            'idaho'             => array('ela'  =>  Uuid::fromString('c6488a01-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6488e0d-d7cb-11e8-824f-0242ac160002')),
+            'illinois'          => array('ela'  =>  Uuid::fromString('c64891a3-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6489520-d7cb-11e8-824f-0242ac160002')),
+            'indiana'           => array('ela'  =>  Uuid::fromString('c639d0e1-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c639d471-d7cb-11e8-824f-0242ac160002')),
+            'iowa'              => array('ela'  =>  Uuid::fromString('c64898a5-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6489c22-d7cb-11e8-824f-0242ac160002')),
+            'kansas'            => array('ela'  =>  Uuid::fromString('c6652039-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c649d99c-d7cb-11e8-824f-0242ac160002')),
+            'kentucky'          => array('ela'  =>  Uuid::fromString('15efb167-eb8f-11e9-9f9f-0242ac140002'),   'math'  =>  Uuid::fromString('15efb3f5-eb8f-11e9-9f9f-0242ac140002')),
+            'louisiana'         => array('ela'  =>  Uuid::fromString('c6493f4d-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c64942d8-d7cb-11e8-824f-0242ac160002')),
+            'maine'             => array('ela'  =>  Uuid::fromString('c648a8bf-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c648ad45-d7cb-11e8-824f-0242ac160002')),
+            'maryland'          => array('ela'  =>  Uuid::fromString('c648b1d1-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c648b6d8-d7cb-11e8-824f-0242ac160002')),
+            'massachusetts'     => array('ela'  =>  Uuid::fromString('c607e8f1-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c607d627-d7cb-11e8-824f-0242ac160002')),
+            'michigan'          => array('ela'  =>  Uuid::fromString('c648bb7e-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c648c128-d7cb-11e8-824f-0242ac160002')),
+            'minnesota'         => array('ela'  =>  Uuid::fromString('c66529b3-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c63aa11e-d7cb-11e8-824f-0242ac160002')),
+            'mississippi'       => array('ela'  =>  Uuid::fromString('c664c0fa-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6647f96-d7cb-11e8-824f-0242ac160002')),
+            'missouri'          => array('ela'  =>  Uuid::fromString('c63aabba-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c63aaddb-d7cb-11e8-824f-0242ac160002')),
+            'montana'           => array('ela'  =>  Uuid::fromString('c648c5d7-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c648ca60-d7cb-11e8-824f-0242ac160002')),
+            'national'          => array('ela'  =>  Uuid::fromString('c64961be-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6496676-d7cb-11e8-824f-0242ac160002')),
+            'nebraska'          => array('ela'  =>  Uuid::fromString('c63ac8da-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c63ac74f-d7cb-11e8-824f-0242ac160002')),
+            'nevada'            => array('ela'  =>  Uuid::fromString('c648ce31-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c648d1c5-d7cb-11e8-824f-0242ac160002')),
+            'new_hampshire'     => array('ela'  =>  Uuid::fromString('c648d542-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c648d8ba-d7cb-11e8-824f-0242ac160002')),
+            'new_jersey'        => array('ela'  =>  Uuid::fromString('c6485eaa-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6486244-d7cb-11e8-824f-0242ac160002')),
+            'new_mexico'        => array('ela'  =>  Uuid::fromString('c648dcb9-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c648e049-d7cb-11e8-824f-0242ac160002')),
+            'new_york'          => array('ela'  =>  Uuid::fromString('c649cfd7-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c649d172-d7cb-11e8-824f-0242ac160002')),
+            'north_carolina'    => array('ela'  =>  Uuid::fromString('c649d674-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c649d809-d7cb-11e8-824f-0242ac160002')),
+            'north_dakota'      => array('ela'  =>  Uuid::fromString('c63b0002-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c63b0631-d7cb-11e8-824f-0242ac160002')),
+            'ohio'              => array('ela'  =>  Uuid::fromString('c648e3cc-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c63b33bf-d7cb-11e8-824f-0242ac160002')),
+            'oklahoma'          => array('ela'  =>  Uuid::fromString('c63b4f24-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c63b48a8-d7cb-11e8-824f-0242ac160002')),
+            'oregon'            => array('ela'  =>  Uuid::fromString('c648eb12-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c648ef39-d7cb-11e8-824f-0242ac160002')),
+            'pennsylvania'      => array('ela'  =>  Uuid::fromString('c638bb1c-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c627f1db-d7cb-11e8-824f-0242ac160002')),
+            'rhode_island'      => array('ela'  =>  Uuid::fromString('c648f2bf-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c648f635-d7cb-11e8-824f-0242ac160002')),
+            'south_carolina'    => array('ela'  =>  Uuid::fromString('c63b24cf-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c63b2343-d7cb-11e8-824f-0242ac160002')),
+            'south_dakota'      => array('ela'  =>  Uuid::fromString('c648f9b3-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c648fd31-d7cb-11e8-824f-0242ac160002')),
+            'tennessee'         => array('ela'  =>  Uuid::fromString('c607fa0c-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c649db2b-d7cb-11e8-824f-0242ac160002')),
+            'texas'             => array('ela'  =>  Uuid::fromString('c22d9405-c1f7-51e6-9883-b3c807e67e6c'),   'math'  =>  Uuid::fromString('bc997e24-7f3b-5df0-a0cd-3a8ac9cf0e2e')),
+            'utah'              => array('ela'  =>  Uuid::fromString('c6494d63-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c63bc986-d7cb-11e8-824f-0242ac160002')),
+            'vermont'           => array('ela'  =>  Uuid::fromString('c64900aa-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c64906b8-d7cb-11e8-824f-0242ac160002')),
+            'virginia'          => array('ela'  =>  Uuid::fromString('c6083284-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c608bd3a-d7cb-11e8-824f-0242ac160002')),
+            'washington'        => array('ela'  =>  Uuid::fromString('c6490c75-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6491155-d7cb-11e8-824f-0242ac160002')),
+            'west_virginia'     => array('ela'  =>  Uuid::fromString('c647fb93-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6648c2e-d7cb-11e8-824f-0242ac160002')),
+            'wisconsin'         => array('ela'  =>  Uuid::fromString('c6491502-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c6491886-d7cb-11e8-824f-0242ac160002')),
+            'wyoming'           => array('ela'  =>  Uuid::fromString('c6491c0d-d7cb-11e8-824f-0242ac160002'),   'math'  =>  Uuid::fromString('c649757a-d7cb-11e8-824f-0242ac160002')),
+            ];
+
 
     }
 
@@ -381,11 +437,6 @@ final class SpineImport
                 if (null === $item) {
                     continue;
                 }
-//                $key = $item->getAbbreviatedStatement();
-//                $itemIdentifier = $item->getIdentifier();
-//                if (null === $this->hierarchyItemIdentifiers[$key]) {
-//                    $this->hierarchyItemIdentifiers[$key] = array('identifier' => $itemIdentifier, 'column' => $column);
-//                }
                 if (array_key_exists('smartLevel', $this->levelIndex[$item->getIdentifier()])) {
                     $smartLevel = $this->levelIndex[$item->getIdentifier()]['smartLevel'];
                     $items[$item->getIdentifier()] = $item;
@@ -398,11 +449,6 @@ final class SpineImport
             if (null === $item) {
                 continue;
             }
-//            $key = $item->getAbbreviatedStatement();
-//            $itemIdentifier = $item->getIdentifier();
-//            if (null === $this->hierarchyItemIdentifiers[$key]) {
-//                $this->hierarchyItemIdentifiers[$key] = array('identifier' => $itemIdentifier, 'column' => $column);
-//            }
             if (array_key_exists('smartLevel', $this->levelIndex[$item->getIdentifier()])) {
                 $smartLevel = $this->levelIndex[$item->getIdentifier()]['smartLevel'];
                 $items[$item->getIdentifier()] = $item;
@@ -472,19 +518,261 @@ final class SpineImport
         }
         $this->var_error_log(sprintf("%s", $msg));
         $doc = $this->saveDocument($sheet);
+        $this->var_error_log(sprintf("%s\t\t[I] import associations for %s", $msg, $doc->getTitle()));
         $items[$doc->getIdentifier()] = $doc->getLsItems();
         $children[$doc->getIdentifier()] = $doc->getIdentifier();
-        $lastRow = $sheet->getHighestRow();
-//        for ($i = 7; $i <= $lastRow; ++$i) {
-//            $assoc = $this->saveAssociation($sheet, $doc, $i, $items, $children);
-//            if (null !== $assoc) {
-//                $associationsIdentifiers[$assoc->getIdentifier()] = null;
-//            }
-//        }
+        $lastRow = 8; // $sheet->getHighestRow();
+        $lastAssociationColumn = 15; // 855;
+        $skill['skill GUID'] = 8;
+        $itemRepo = $this->getEntityManager()->getRepository(LsItem::class);
+        for ($column = 14; $column <= $lastAssociationColumn; ++$column) {
+            // Get the column header
+            $heading = $this->getCellValueOrNull($sheet, $column, $this->rowOffset);
+            if (empty($heading)) {
+                throw new \RuntimeException(sprintf("%s\t\t[L] empty heading at position[%d, %d]", $msg, $this->rowOffset, $column));
+            }
+            // Skip these columns for now
+            if (1 == preg_match("/^([Oo]ther|[rR][lL]*|[Pp]re[rR]eq*)/", $heading) ) {
+                $this->var_error_log(sprintf("%s\t\t[L] column[%d] skipping %s", $msg, $column, $heading));
+                continue;
+            }
+            $this->var_error_log(sprintf("%s\t\t[L] processing heading %s", $msg, $heading));
+            $group = $this->getAssociationGroup($doc, $heading);
+            // lookup the associated document based on the heading
+            $associatedDoc = $this->getAssociatedDocument($doc, $heading);
+            $this->var_error_log(sprintf("%s\t\t[M] found associated document %s", $msg, $associatedDoc->getTitle()));
+            for ($row = 7; $row <= $lastRow; ++$row) {
+                $skillGuid = $this->getCellValueOrNull($sheet, $skill['skill GUID'], $row);
+                $item = $itemRepo->findOneBy(['identifier' => $skillGuid, 'lsDocIdentifier' => $doc->getIdentifier()]);
+                if (null === $item) {
+                    throw new \RuntimeException(sprintf("%s\t\t[L] row[%d, %d] Missing item %s for document %s", $msg, $row, $column, $skillGuid, $doc->getTitle()));
+                }
+                $this->var_error_log(sprintf("%s\t\t[I] row[%d, %d] import associations for %s", $msg, $row, $column, $doc->getTitle()));
+                $assoc = $this->saveAssociation($sheet, $doc, $associatedDoc, $row, $column, $item, $heading, $group);
+                if (null !== $assoc) {
+                    $this->var_error_log(sprintf("%s\t\t[M] pos[%d, %d] found %s at for %s", $msg, $row, $column, $assoc->getIdentifier(), $doc->getTitle()));
+                    $associationsIdentifiers[$assoc->getIdentifier()] = null;
+                } else {
+                    $this->var_error_log(sprintf("%s\t\t[S] pos[%d, %d] no match for %s", $msg, $row, $column, $doc->getTitle()));
+                }    
+            }
+        }
 //                $this->checkRemovedItems($doc, $items);
 //                $this->checkRemovedAssociations($doc, $associationsIdentifiers);
         return $doc;
     }
+
+    private function saveAssociation(Worksheet $sheet, LsDoc $doc, LSDoc $associatedDoc, int $row, int $column, LsItem $item, string $heading, LsDefAssociationGrouping $group): ?LsAssociation
+    {
+        $msg = "SpineImport::saveAssociation()";
+        $fieldNames = [
+            1 => 'identifier',
+            2 => 'originNodeURI',
+            3 => 'originNodeIdentifier',
+            4 => 'originNodeHumanCodingScheme',
+            5 => 'associationType',
+            6 => 'destinationNodeURI',
+            7 => 'destinationNodeIdentifier',
+            8 => 'destinationNodeHumanCodingScheme',
+            9 => 'associationGroupIdentifier',
+            10 => 'associationGroupName',
+        ];
+
+        $labels = $this->getAssociationLabels($sheet, $row, $column);
+        if (!$labels) {
+            return null;
+        }
+        $itemRepo = $this->getEntityManager()->getRepository(LsItem::class);
+        foreach ($labels as $label) {
+            $subLabels = explode('.', $label);
+            $this->var_error_log(sprintf("%s found %d subLabels in %s", $msg, count($subLabels), $label));
+            if ($subLabels) {
+                switch (count($subLabels)) {
+                    case 4:
+                        $level = sprintf("%s\%",$subLabels[1]);
+                        $scheme = sprintf("%s%s.",$subLabels[2], $subLabels[3]);
+                    break;
+                    case 3:
+                        $level = sprintf("%s",$subLabels[1]);
+                        $scheme = sprintf("%s.",$subLabels[2]);
+                    break;
+                    case 2:
+                        throw new \RuntimeException(sprintf("%s label %s missing human coding scheme for label %s.%s", $msg, $subLabels[0], $subLabels[1]));
+                    break;
+                    case 1:
+                        throw new \RuntimeException(sprintf("%s missing educational level and human coding scheme for label %s", $msg, $subLabels[0]));
+                    break;
+                    default:
+                        throw new \RuntimeException(sprintf("%s bad label format", $msg));
+                }
+                if ($level == "K") {
+                    $level = sprintf("%sG", $level);
+                }
+                $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] lookup %s for educational level %s in %s", $msg, $row, $column, $scheme, $level, $associatedDoc->getTitle()));
+                $associatedItem = $itemRepo->findOneBy(['lsDocIdentifier' => $associatedDoc->getIdentifier(), 'humanCodingScheme' => $scheme, 'educationalAlignment' => $level]);
+                if (null === $associatedItem) {
+                    throw new \RuntimeException(sprintf("%s no item found for human coding scheme %s and educatioanal alignment %s in %s", $msg, $scheme, $level, $associatedDoc->getTitle()));
+                }
+                $this->var_error_log(sprintf("%s\t\t[M] row[%d, %d] %s[%s] matched human coding scheme %s and educational level %s in %s", $msg, $row, $column, $associatedItem->getIdentifier(), $associatedItem->getFullStatement(), $scheme, $level, $associatedDoc->getTitle()));
+                return null;
+            }
+            throw new \RuntimeException(sprintf("%s could not explode %s on '.'", $msg, $label));
+        }
+        return null;
+    }
+ /*        
+        $association = null;
+        $fields = [];
+
+        foreach ($fieldNames as $col => $name) {
+            $value = $this->getCellValueOrNull($sheet, $col, $row);
+            if (null !== $value) {
+                $value = (string) $value;
+            }
+            $fields[$name] = $value;
+        }
+
+        if (LsAssociation::CHILD_OF === $fields['associationType'] && array_key_exists($fields['originNodeIdentifier'], $children)) {
+            return null;
+        }
+
+        if (empty($fields['identifier'])) {
+            $fields['identifier'] = null;
+        } elseif (Uuid::isValid($fields['identifier'])) {
+            $association = $this->getEntityManager()->getRepository(LsAssociation::class)
+                ->findOneBy(['identifier' => $fields['identifier'], 'lsDocIdentifier' => $doc->getIdentifier()]);
+        }
+
+        if (null === $association) {
+            $association = $this->getEntityManager()->getRepository(LsAssociation::class)->findOneBy([
+                'originNodeIdentifier' => $fields['originNodeIdentifier'],
+                'type' => $fields['associationType'],
+                'destinationNodeIdentifier' => $fields['destinationNodeIdentifier'],
+            ]);
+
+            if (null === $association) {
+                $association = $doc->createAssociation($fields['identifier']);
+            }
+        }
+
+        if (array_key_exists($fields['originNodeIdentifier'], $items)) {
+            $association->setOrigin($items[$fields['originNodeIdentifier']]);
+        } else {
+            $ref = 'data:text/x-ref-unresolved,'.$fields['originNodeIdentifier'];
+            $association->setOrigin($ref, $fields['originNodeIdentifier']);
+        }
+
+        if (array_key_exists($fields['destinationNodeIdentifier'], $items)) {
+            $association->setDestination($items[$fields['destinationNodeIdentifier']]);
+        } elseif ($item = $itemRepo->findOneByIdentifier($fields['destinationNodeIdentifier'])) {
+            $items[$item->getIdentifier()] = $item;
+            $association->setDestination($item);
+        } else {
+            $ref = 'data:text/x-ref-unresolved,'.$fields['destinationNodeIdentifier'];
+            $association->setDestination($ref, $fields['destinationNodeIdentifier']);
+        }
+
+        $allTypes = [];
+        foreach (LsAssociation::allTypes() as $type) {
+            $allTypes[str_replace(' ', '', strtolower($type))] = $type;
+        }
+
+        $associationType = str_replace(' ', '', strtolower($fields['associationType']));
+
+        if (array_key_exists($associationType, $allTypes)) {
+            $association->setType($allTypes[$associationType]);
+        } else {
+            $log = new ImportLog();
+            $log->setLsDoc($doc);
+            $log->setMessageType('error');
+            $log->setMessage("Invalid Association Type ({$fields['associationType']} on row {$row}.");
+
+            $this->getEntityManager()->persist($log);
+
+            return null;
+        }
+
+        if (!empty($fields['associationGroupIdentifier'])) {
+            $associationGrouping = new LsDefAssociationGrouping();
+            $associationGrouping->setLsDoc($doc);
+            $associationGrouping->setTitle($fields['associationGroupName']);
+            $association->setGroup($associationGrouping);
+            $this->getEntityManager()->persist($associationGrouping);
+        }
+
+        $this->getEntityManager()->persist($association);
+
+        return $association;
+*/
+
+    private function getAssociationGroup(LsDoc $doc, string $title): LsDefAssociationGrouping 
+    {
+        $msg = "SpineImport::getAssociationGroup()";
+        $associationGroupings = $doc->getAssociationGroupings();
+        foreach($associationGroupings as $associationGroup) {
+            $groupTitle = $associationGroup->getTitle();
+            if ( $title != $groupTitle ) {
+                continue;
+            }
+            return $associationGroup;
+        }
+        $associationGroup = new LsDefAssociationGrouping();
+        $associationGroup->setTitle($title);
+        $associationGroup->setLsDoc($doc);
+        $this->getEntityManager()->persist($associationGroup);
+        return $associationGroup;
+    }
+
+    private function getAssociatedDocument(LsDoc $doc, string $heading): ?LsDoc
+    {
+        $msg = "SpineImport::getAssociatedDocument()";
+        $headings = preg_split("/[\s,]+/", strtolower($heading));
+        $docRef = $headings[0];
+        if (empty($docRef)) {
+            throw new \RuntimeException(sprintf("%s\t[L] bad heading format %s", $msg, $heading));
+        }
+        if ($docRef == "new" || $docRef == "north" || $docRef == "south" || $docRef == "west" || $docRef == "rhode") {
+            $docRef = sprintf("%s_%s", $docRef, $headings[1]);
+        }
+        $hmhRef = $this->documents['hmh'];
+        $this->var_error_log(sprintf("%s\t[L] Looking up associated documents for %s and %s", $msg, $hmhRef['ela'], $hmhRef['math']));
+        if (null === $hmhRef) {
+            throw new \RuntimeException(sprintf("%s\t[L] cannot find document identifiers for HMH", $msg));
+        }
+        $associatedDocIdentifier = $this->documents[$docRef];
+        if (null === $associatedDocIdentifier) {
+            throw new \RuntimeException(sprintf("%s\t[L] cannot find document identifier for %s", $msg, $docRef));
+        }
+        $hmhDocId = $doc->getIdentifier();
+        switch (true) {
+            case ($hmhDocId == $hmhRef['ela']):
+                $associatedDocIdentifier = $associatedDocIdentifier['ela'];
+                break;
+            case ($hmhDocId == $hmhRef['math']):
+                $associatedDocIdentifier = $associatedDocIdentifier['math'];
+                break;
+            default:
+                throw new \RuntimeException(sprintf("%s\t[L] %s does not match an HMH learning spine", $msg, $doc->getIdentifier()));
+        }
+        $associatedDoc = $this->getEntityManager()->getRepository(LsDoc::class)->findOneByIdentifier($associatedDocIdentifier);
+        if (null === $associatedDoc) {
+            throw new \RuntimeException(sprintf("%s\t[L] no document found for identifier %s", $msg, $associatedDocIdentifier));
+        }
+        return $associatedDoc;
+    }
+
+    private function getAssociationLabels($sheet, $row, $column): ?array
+    {
+        $msg = "SpineImport::getAssociatioLabels()";
+        $labels = $this->getCellValueOrNull($sheet, $column, $row);
+        if (empty($labels)) {
+            return null;
+        }
+        $this->var_error_log(sprintf("%s\t[L] row[%d, %d] found labels %s", $msg, $row, $column, $labels));
+        $labels = explode(",", $labels);
+        return $labels;
+    }
+
 
     private function saveDocument(Worksheet $sheet): LsDoc
     {
@@ -663,106 +951,6 @@ final class SpineImport
         return $licence;
     }
 
-
-    private function saveAssociation(Worksheet $sheet, LsDoc $doc, int $row, array $items, array $children): ?LsAssociation
-    {
-        $fieldNames = [
-            1 => 'identifier',
-            2 => 'originNodeURI',
-            3 => 'originNodeIdentifier',
-            4 => 'originNodeHumanCodingScheme',
-            5 => 'associationType',
-            6 => 'destinationNodeURI',
-            7 => 'destinationNodeIdentifier',
-            8 => 'destinationNodeHumanCodingScheme',
-            9 => 'associationGroupIdentifier',
-            10 => 'associationGroupName',
-        ];
-
-        $itemRepo = $this->getEntityManager()->getRepository(LsItem::class);
-        $association = null;
-        $fields = [];
-
-        foreach ($fieldNames as $col => $name) {
-            $value = $this->getCellValueOrNull($sheet, $col, $row);
-            if (null !== $value) {
-                $value = (string) $value;
-            }
-            $fields[$name] = $value;
-        }
-
-        if (LsAssociation::CHILD_OF === $fields['associationType'] && array_key_exists($fields['originNodeIdentifier'], $children)) {
-            return null;
-        }
-
-        if (empty($fields['identifier'])) {
-            $fields['identifier'] = null;
-        } elseif (Uuid::isValid($fields['identifier'])) {
-            $association = $this->getEntityManager()->getRepository(LsAssociation::class)
-                ->findOneBy(['identifier' => $fields['identifier'], 'lsDocIdentifier' => $doc->getIdentifier()]);
-        }
-
-        if (null === $association) {
-            $association = $this->getEntityManager()->getRepository(LsAssociation::class)->findOneBy([
-                'originNodeIdentifier' => $fields['originNodeIdentifier'],
-                'type' => $fields['associationType'],
-                'destinationNodeIdentifier' => $fields['destinationNodeIdentifier'],
-            ]);
-
-            if (null === $association) {
-                $association = $doc->createAssociation($fields['identifier']);
-            }
-        }
-
-        if (array_key_exists($fields['originNodeIdentifier'], $items)) {
-            $association->setOrigin($items[$fields['originNodeIdentifier']]);
-        } else {
-            $ref = 'data:text/x-ref-unresolved,'.$fields['originNodeIdentifier'];
-            $association->setOrigin($ref, $fields['originNodeIdentifier']);
-        }
-
-        if (array_key_exists($fields['destinationNodeIdentifier'], $items)) {
-            $association->setDestination($items[$fields['destinationNodeIdentifier']]);
-        } elseif ($item = $itemRepo->findOneByIdentifier($fields['destinationNodeIdentifier'])) {
-            $items[$item->getIdentifier()] = $item;
-            $association->setDestination($item);
-        } else {
-            $ref = 'data:text/x-ref-unresolved,'.$fields['destinationNodeIdentifier'];
-            $association->setDestination($ref, $fields['destinationNodeIdentifier']);
-        }
-
-        $allTypes = [];
-        foreach (LsAssociation::allTypes() as $type) {
-            $allTypes[str_replace(' ', '', strtolower($type))] = $type;
-        }
-
-        $associationType = str_replace(' ', '', strtolower($fields['associationType']));
-
-        if (array_key_exists($associationType, $allTypes)) {
-            $association->setType($allTypes[$associationType]);
-        } else {
-            $log = new ImportLog();
-            $log->setLsDoc($doc);
-            $log->setMessageType('error');
-            $log->setMessage("Invalid Association Type ({$fields['associationType']} on row {$row}.");
-
-            $this->getEntityManager()->persist($log);
-
-            return null;
-        }
-
-        if (!empty($fields['associationGroupIdentifier'])) {
-            $associationGrouping = new LsDefAssociationGrouping();
-            $associationGrouping->setLsDoc($doc);
-            $associationGrouping->setTitle($fields['associationGroupName']);
-            $association->setGroup($associationGrouping);
-            $this->getEntityManager()->persist($associationGrouping);
-        }
-
-        $this->getEntityManager()->persist($association);
-
-        return $association;
-    }
 
     private function getCellValueOrNull(Worksheet $sheet, int $col, int $row)
     {
