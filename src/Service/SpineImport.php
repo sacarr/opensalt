@@ -12,10 +12,12 @@ use App\Entity\Framework\LsDoc;
 use App\Entity\Framework\LsItem;
 use App\Util\EducationLevelSet;
 use Doctrine\ORM\EntityManagerInterface;
+use phpDocumentor\Reflection\Types\Boolean;
 use phpDocumentor\Reflection\Types\Null_;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xls\Worksheet as XlsWorksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Worksheet as XlsxWorksheet;
+use PhpParser\Node\Expr\Cast\String_;
 use Proxies\__CG__\App\Entity\Framework\LsDefAssociationGrouping as FrameworkLsDefAssociationGrouping;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -521,8 +523,8 @@ final class SpineImport
         $this->var_error_log(sprintf("%s\t\t[I] import associations for %s", $msg, $doc->getTitle()));
         $items[$doc->getIdentifier()] = $doc->getLsItems();
         $children[$doc->getIdentifier()] = $doc->getIdentifier();
-        $lastRow = 8; // $sheet->getHighestRow();
-        $lastAssociationColumn = 15; // 855;
+        $lastRow = $sheet->getHighestRow();
+        $lastAssociationColumn = 27; // 855;
         $skill['skill GUID'] = 8;
         $itemRepo = $this->getEntityManager()->getRepository(LsItem::class);
         for ($column = 14; $column <= $lastAssociationColumn; ++$column) {
@@ -536,10 +538,9 @@ final class SpineImport
                 $this->var_error_log(sprintf("%s\t\t[L] column[%d] skipping %s", $msg, $column, $heading));
                 continue;
             }
-            $this->var_error_log(sprintf("%s\t\t[L] processing heading %s", $msg, $heading));
-            $group = $this->getAssociationGroup($doc, $heading);
+            $this->var_error_log(sprintf("%s\t\t[L] row[%d,%d] processing heading %s", $msg, $this->rowOffset, $column, $heading));
             // lookup the associated document based on the heading
-            $associatedDoc = $this->getAssociatedDocument($doc, $heading);
+            $associatedDoc = $this->getAssociatedDocument($doc, $heading, $this->rowOffset, $column);
             $this->var_error_log(sprintf("%s\t\t[M] found associated document %s", $msg, $associatedDoc->getTitle()));
             for ($row = 7; $row <= $lastRow; ++$row) {
                 $skillGuid = $this->getCellValueOrNull($sheet, $skill['skill GUID'], $row);
@@ -547,183 +548,94 @@ final class SpineImport
                 if (null === $item) {
                     throw new \RuntimeException(sprintf("%s\t\t[L] row[%d, %d] Missing item %s for document %s", $msg, $row, $column, $skillGuid, $doc->getTitle()));
                 }
-                $this->var_error_log(sprintf("%s\t\t[I] row[%d, %d] import associations for %s", $msg, $row, $column, $doc->getTitle()));
-                $assoc = $this->saveAssociation($sheet, $doc, $associatedDoc, $row, $column, $item, $heading, $group);
-                if (null !== $assoc) {
-                    $this->var_error_log(sprintf("%s\t\t[M] pos[%d, %d] found %s at for %s", $msg, $row, $column, $assoc->getIdentifier(), $doc->getTitle()));
-                    $associationsIdentifiers[$assoc->getIdentifier()] = null;
-                } else {
-                    $this->var_error_log(sprintf("%s\t\t[S] pos[%d, %d] no match for %s", $msg, $row, $column, $doc->getTitle()));
-                }    
+//                $this->var_error_log(sprintf("%s\t\t[I] row[%d, %d] import associations for %s [%s]", $msg, $row, $column, $item->getIdentifier(), $item->getAbbreviatedStatement()));
+                $associatedItems = $this->getAssociatedItems($sheet, $row, $column, $associatedDoc);
+                if ($associatedItems) {
+                    foreach ($associatedItems as $associatedItem) {
+                        $this->var_error_log(sprintf("%s\t\t[L] row[%d,%d] looking up associations for %s[%s]", $msg, $row, $column, $associatedItem->getIdentifier(), $associatedItem->getFullStatement()));
+                        $this->getAssociation($item, $associatedItem, $doc, $associatedDoc, $heading, $row, $column);
+                    }
+                }
             }
         }
-//                $this->checkRemovedItems($doc, $items);
-//                $this->checkRemovedAssociations($doc, $associationsIdentifiers);
         return $doc;
     }
 
-    private function saveAssociation(Worksheet $sheet, LsDoc $doc, LSDoc $associatedDoc, int $row, int $column, LsItem $item, string $heading, LsDefAssociationGrouping $group): ?LsAssociation
+    private function getAssociation(LsItem $item, LsItem $associatedItem, LsDoc $doc, LsDoc $associatedDoc, string $heading, int $row, int $column): LsAssociation
     {
-        $msg = "SpineImport::saveAssociation()";
-        $fieldNames = [
-            1 => 'identifier',
-            2 => 'originNodeURI',
-            3 => 'originNodeIdentifier',
-            4 => 'originNodeHumanCodingScheme',
-            5 => 'associationType',
-            6 => 'destinationNodeURI',
-            7 => 'destinationNodeIdentifier',
-            8 => 'destinationNodeHumanCodingScheme',
-            9 => 'associationGroupIdentifier',
-            10 => 'associationGroupName',
-        ];
+        $msg = "SpineImport::getAssociation()";
+        $this->var_error_log(sprintf("%s\t\t\t[L] row[%d, %d] looking up %s associations between %s[%s] and %s[%s]", $msg, $row, $column, LsAssociation::EXACT_MATCH_OF,
+            $item->getIdentifier(), $item->getAbbreviatedStatement(), $associatedItem->getIdentifier(), $associatedItem->getAbbreviatedStatement()));
+        $associationRepo = $this->getEntityManager()->getRepository(LsAssociation::class);
+        if (null === $associationRepo) {
+            throw new \RuntimeException(sprintf("%s\t\t\t[L] row[%d, %d] could not find an association repo while looking up associations for %s[%s]", $msg, $row, $colun, $item->getIdentifier(), $item->getAbbreviatedStatement()));
+        }
+        $association = $associationRepo->findOneBy([
+            'originNodeIdentifier' => str_replace('_', '', $item->getIdentifier()),
+            'type' => LsAssociation::EXACT_MATCH_OF,
+            'destinationNodeIdentifier' => str_replace('_', '', $associatedItem->getIdentifier()),
+        ]);
+        if ( null === $association) {
+            $this->var_error_log(sprintf("%s\t\t\t[N] [%d, %d] creating an exact-match association from %s[%s] to %s[%s]", $msg, $row, $column, $item->getIdentifier(), $item->getAbbreviatedStatement(), $associatedItem->getIdentifier(), $associatedItem->getAbbreviatedStatement()));
+            $association = $doc->createAssociation();
+            $association->setOrigin($item);
+            $association->setDestination($associatedItem);
+            $association->setType(LsAssociation::EXACT_MATCH_OF);
+            $this->var_error_log(sprintf("%s\t\t\t[N] [%d, %d] Persisting association of type %s from %s[%s] to %s[%s]", $msg, $row, $column,
+                'LsAssociation::EXACT_MATCH_OF',
+                $association->getOriginLsItem()->getIdentifier(), $association->getOriginLsItem()->getFullStatement(),
+                $association->getDestinationLsItem()->getIdentifier(), $association->getDestinationLsItem()->getFullStatement()));
+            $this->getEntityManager()->persist($association);
+        }
+        $associatedGroup = $this->hasAssociatedGroup($association, $doc, $heading, $row, $column);
+        if ( null === $associatedGroup) {
+            $associatedGroup = new LsDefAssociationGrouping();
+            $associatedGroup->setTitle($heading);
+            $associatedGroup->setLsDoc($doc);
+            $this->getEntityManager()->persist($associatedGroup);
+            $this->var_error_log(sprintf("%s\t\t\t[N] row[%d, %d] Created association group %s", $msg, $this->rowOffset, $column, $associatedGroup->getTitle()));
+            $doc->addAssociationGrouping($associatedGroup);
+            $this->var_error_log(sprintf("%s\t\t\t[N] row[%d, %d] Addeded association group %s[%s] to document %s[%s]", $msg, $row, $column, $associatedGroup->getIdentifier(), $associatedGroup->getTitle(), $doc->getIdentifier(), $doc->getTitle()));
+        }
+        $association->setGroup($associatedGroup);
+        return $association;
+    }
 
-        $labels = $this->getAssociationLabels($sheet, $row, $column);
-        if (!$labels) {
+    private function hasAssociatedGroup(LsAssociation $association, LsDoc $doc, string $heading, int $row, int $column): ?LsDefAssociationGrouping
+    {
+        $msg = "SpineImport::hasAssociatedGroup()";
+        $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] looking up association group %s", $msg, $row, $column, $heading));
+        $associatedGroups = $doc->getAssociationGroupings();
+        if (null === $associatedGroups) {
+            $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] no groups found for association %s referenceing %s[%s]", $msg, $row, $column, $association->getIdentifier(), $association->getOriginLsItem()->getIdentifier(), $association->getOriginLsItem()->getAbbreviatedStatement()));
+            return null;
+
+        }
+        if ( 0 === count($associatedGroups)) {
+            $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] no group for title %s", $msg, $row, $column, $heading));
             return null;
         }
-        $itemRepo = $this->getEntityManager()->getRepository(LsItem::class);
-        foreach ($labels as $label) {
-            $subLabels = explode('.', $label);
-            $this->var_error_log(sprintf("%s found %d subLabels in %s", $msg, count($subLabels), $label));
-            if ($subLabels) {
-                switch (count($subLabels)) {
-                    case 4:
-                        $level = sprintf("%s\%",$subLabels[1]);
-                        $scheme = sprintf("%s%s.",$subLabels[2], $subLabels[3]);
-                    break;
-                    case 3:
-                        $level = sprintf("%s",$subLabels[1]);
-                        $scheme = sprintf("%s.",$subLabels[2]);
-                    break;
-                    case 2:
-                        throw new \RuntimeException(sprintf("%s label %s missing human coding scheme for label %s.%s", $msg, $subLabels[0], $subLabels[1]));
-                    break;
-                    case 1:
-                        throw new \RuntimeException(sprintf("%s missing educational level and human coding scheme for label %s", $msg, $subLabels[0]));
-                    break;
-                    default:
-                        throw new \RuntimeException(sprintf("%s bad label format", $msg));
-                }
-                if ($level == "K") {
-                    $level = sprintf("%sG", $level);
-                }
-                $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] lookup %s for educational level %s in %s", $msg, $row, $column, $scheme, $level, $associatedDoc->getTitle()));
-                $associatedItem = $itemRepo->findOneBy(['lsDocIdentifier' => $associatedDoc->getIdentifier(), 'humanCodingScheme' => $scheme, 'educationalAlignment' => $level]);
-                if (null === $associatedItem) {
-                    throw new \RuntimeException(sprintf("%s no item found for human coding scheme %s and educatioanal alignment %s in %s", $msg, $scheme, $level, $associatedDoc->getTitle()));
-                }
-                $this->var_error_log(sprintf("%s\t\t[M] row[%d, %d] %s[%s] matched human coding scheme %s and educational level %s in %s", $msg, $row, $column, $associatedItem->getIdentifier(), $associatedItem->getFullStatement(), $scheme, $level, $associatedDoc->getTitle()));
-                return null;
+        foreach($associatedGroups as $associatedGroup) {
+            if ( null === $associatedGroup) {
+                $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] found null group", $msg, $row, $column));
+                continue;
             }
-            throw new \RuntimeException(sprintf("%s could not explode %s on '.'", $msg, $label));
+            $associatedGroupTitle = $associatedGroup->getTitle();
+            if ( empty($associatedGroupTitle) ) {
+                $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] found group %s with no title", $msg, $row, $column, $associatedGroup->getIdentifier()));
+                continue;
+            }
+            $associatedGroupTitle = sprintf("%s", $associatedGroupTitle);
+            $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] found %s", $msg, $row, $column, $associatedGroupTitle));
+                if ( 0 == strcmp($heading, $associatedGroupTitle) ) {
+                    $this->var_error_log(sprintf("%s\t\t[] row[%d, %d] matched  association group %s[%s]", $msg, $row, $column, $associatedGroup->getIdentifier(), $associatedGroupTitle));
+                    return $associatedGroup;
+                }
         }
         return null;
     }
- /*        
-        $association = null;
-        $fields = [];
 
-        foreach ($fieldNames as $col => $name) {
-            $value = $this->getCellValueOrNull($sheet, $col, $row);
-            if (null !== $value) {
-                $value = (string) $value;
-            }
-            $fields[$name] = $value;
-        }
-
-        if (LsAssociation::CHILD_OF === $fields['associationType'] && array_key_exists($fields['originNodeIdentifier'], $children)) {
-            return null;
-        }
-
-        if (empty($fields['identifier'])) {
-            $fields['identifier'] = null;
-        } elseif (Uuid::isValid($fields['identifier'])) {
-            $association = $this->getEntityManager()->getRepository(LsAssociation::class)
-                ->findOneBy(['identifier' => $fields['identifier'], 'lsDocIdentifier' => $doc->getIdentifier()]);
-        }
-
-        if (null === $association) {
-            $association = $this->getEntityManager()->getRepository(LsAssociation::class)->findOneBy([
-                'originNodeIdentifier' => $fields['originNodeIdentifier'],
-                'type' => $fields['associationType'],
-                'destinationNodeIdentifier' => $fields['destinationNodeIdentifier'],
-            ]);
-
-            if (null === $association) {
-                $association = $doc->createAssociation($fields['identifier']);
-            }
-        }
-
-        if (array_key_exists($fields['originNodeIdentifier'], $items)) {
-            $association->setOrigin($items[$fields['originNodeIdentifier']]);
-        } else {
-            $ref = 'data:text/x-ref-unresolved,'.$fields['originNodeIdentifier'];
-            $association->setOrigin($ref, $fields['originNodeIdentifier']);
-        }
-
-        if (array_key_exists($fields['destinationNodeIdentifier'], $items)) {
-            $association->setDestination($items[$fields['destinationNodeIdentifier']]);
-        } elseif ($item = $itemRepo->findOneByIdentifier($fields['destinationNodeIdentifier'])) {
-            $items[$item->getIdentifier()] = $item;
-            $association->setDestination($item);
-        } else {
-            $ref = 'data:text/x-ref-unresolved,'.$fields['destinationNodeIdentifier'];
-            $association->setDestination($ref, $fields['destinationNodeIdentifier']);
-        }
-
-        $allTypes = [];
-        foreach (LsAssociation::allTypes() as $type) {
-            $allTypes[str_replace(' ', '', strtolower($type))] = $type;
-        }
-
-        $associationType = str_replace(' ', '', strtolower($fields['associationType']));
-
-        if (array_key_exists($associationType, $allTypes)) {
-            $association->setType($allTypes[$associationType]);
-        } else {
-            $log = new ImportLog();
-            $log->setLsDoc($doc);
-            $log->setMessageType('error');
-            $log->setMessage("Invalid Association Type ({$fields['associationType']} on row {$row}.");
-
-            $this->getEntityManager()->persist($log);
-
-            return null;
-        }
-
-        if (!empty($fields['associationGroupIdentifier'])) {
-            $associationGrouping = new LsDefAssociationGrouping();
-            $associationGrouping->setLsDoc($doc);
-            $associationGrouping->setTitle($fields['associationGroupName']);
-            $association->setGroup($associationGrouping);
-            $this->getEntityManager()->persist($associationGrouping);
-        }
-
-        $this->getEntityManager()->persist($association);
-
-        return $association;
-*/
-
-    private function getAssociationGroup(LsDoc $doc, string $title): LsDefAssociationGrouping 
-    {
-        $msg = "SpineImport::getAssociationGroup()";
-        $associationGroupings = $doc->getAssociationGroupings();
-        foreach($associationGroupings as $associationGroup) {
-            $groupTitle = $associationGroup->getTitle();
-            if ( $title != $groupTitle ) {
-                continue;
-            }
-            return $associationGroup;
-        }
-        $associationGroup = new LsDefAssociationGrouping();
-        $associationGroup->setTitle($title);
-        $associationGroup->setLsDoc($doc);
-        $this->getEntityManager()->persist($associationGroup);
-        return $associationGroup;
-    }
-
-    private function getAssociatedDocument(LsDoc $doc, string $heading): ?LsDoc
+    private function getAssociatedDocument(LsDoc $doc, string $heading, int $row, int $column): ?LsDoc
     {
         $msg = "SpineImport::getAssociatedDocument()";
         $headings = preg_split("/[\s,]+/", strtolower($heading));
@@ -735,7 +647,7 @@ final class SpineImport
             $docRef = sprintf("%s_%s", $docRef, $headings[1]);
         }
         $hmhRef = $this->documents['hmh'];
-        $this->var_error_log(sprintf("%s\t[L] Looking up associated documents for %s and %s", $msg, $hmhRef['ela'], $hmhRef['math']));
+        $this->var_error_log(sprintf("%s\t[L] row[%d, %d] Looking up associated documents for %s and %s", $msg, $row, $column, $hmhRef['ela'], $hmhRef['math']));
         if (null === $hmhRef) {
             throw new \RuntimeException(sprintf("%s\t[L] cannot find document identifiers for HMH", $msg));
         }
@@ -761,18 +673,89 @@ final class SpineImport
         return $associatedDoc;
     }
 
-    private function getAssociationLabels($sheet, $row, $column): ?array
+    private function getAssociatedItems($sheet, $row, $column, LsDoc $associatedDoc): ?array
     {
-        $msg = "SpineImport::getAssociatioLabels()";
+        $msg = "SpineImport::getAssociatedItems()";
+        $associatedItems = [];
+        $levels = [];
         $labels = $this->getCellValueOrNull($sheet, $column, $row);
         if (empty($labels)) {
+//            $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] no labels", $msg, $row, $column));
             return null;
         }
-        $this->var_error_log(sprintf("%s\t[L] row[%d, %d] found labels %s", $msg, $row, $column, $labels));
+        $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] found labels %s", $msg, $row, $column, $labels));
         $labels = explode(",", $labels);
-        return $labels;
+        $itemRepo = $this->getEntityManager()->getRepository(LsItem::class);
+        foreach ($labels as $label) {
+            $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] process label %s", $msg, $row, $column, $label));
+            $subLabels = explode('.', $label);
+            $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] found %d subLabels in %s", $msg, $row, $column, count($subLabels), $label));
+            if ($subLabels) {
+                switch (true) {
+                    case count($subLabels) == 1 || count($subLabels) == 2:
+                        throw new \RuntimeException(sprintf("%s label %s missing human coding scheme for label %s.%s", $msg, $subLabels[0], $subLabels[1]));
+                    break;
+                    case (count($subLabels) == 3):
+                        $level = $this->getEducationalLevel($row, $column, $subLabels[1]);
+                        $scheme = sprintf("%s.", $subLabels[2]);
+                        $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] educational level %s coding scheme %s", $msg, $row, $column, $subLabels[1], $scheme));
+                    break;
+                    case (count($subLabels) == 4):
+                        $level = $this->getEducationalLevel($row, $column, $subLabels[1]);
+                        $scheme = sprintf("%s%s.", $subLabels[2], $subLabels[3]);
+                        $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] educational level %s coding scheme %s", $msg, $row, $column, $subLabels[1], $scheme));
+                    break;
+                    default:
+                        throw new \RuntimeException(sprintf("%s bad label format", $msg));
+                }
+                $this->var_error_log(sprintf("%s\t\t[L] row[%d, %d] lookup '%s' for educational level '%s' in %s", $msg, $row, $column, $scheme, $level, $associatedDoc->getTitle()));
+                $associatedItem = $itemRepo->findOneBy(['lsDocIdentifier' => $associatedDoc->getIdentifier(), 'humanCodingScheme' => $scheme, 'educationalAlignment' => $level]);
+                if (null === $associatedItem) {
+                        throw new \RuntimeException(sprintf("%s\t\t[L] row[%d, %d] no item found for human coding scheme '%s' and educatioanal alignment '%s' in %s", $msg, $row, $column, $scheme, $level, $associatedDoc->getTitle()));
+                }
+                array_push($associatedItems, $associatedItem);
+                $this->var_error_log(sprintf("%s\t\t[M] row[%d, %d] %s[%s] matched human coding scheme %s and educational level %s in %s", $msg, $row, $column, $associatedItem->getIdentifier(), $associatedItem->getFullStatement(), $scheme, $level, $associatedDoc->getTitle()));
+            }
+            continue;
+        }
+        return $associatedItems;
     }
 
+    private function getEducationalLevel(int $row, int $column, string $label): String
+    {
+        $msg = "SpineImport::getEducationalLevel()";
+        $educationalLevel = "";
+        $this->var_error_log(sprintf("%s,\t\t[L] row[%d, %d] grade range %s", $msg, $row, $column, $label));
+        if (preg_match("/^([kK]|[0-9]|10|11)-([0-9]|1[0|1|2])$/", $label, $gradeRange)) {
+            array_shift($gradeRange);
+            for ($i=$gradeRange[0]; $i <= $gradeRange[1] ;$i++) {
+                if (intval($i) >=10) {
+                    $educationalLevel = sprintf("%s%s,", $educationalLevel, $i);
+                } else {
+                   $educationalLevel = sprintf("%s0%s,", $educationalLevel, $i);
+                }
+            }
+            $educationalLevel = substr($educationalLevel, 0, strrpos($educationalLevel, ','));
+            $this->var_error_log(sprintf("%s,\t\t[L] row[%d, %d] label matched '/^([kK]|[0-9]|10|11)-([0-9]|1[0|1|2])$/'.  Converted to educationalLevel %s", $msg, $row, $column, $educationalLevel));
+            return $educationalLevel;
+        }
+        if (preg_match("/^([kK])$/", $label)) {
+            $educationalLevel = sprintf("%sG", strtoupper($label));
+            $this->var_error_log(sprintf("%s,\t\t[L] row[%d, %d] label matched '/^[kK]$/'. Converted to educationalLevel %s", $msg, $row, $column, $educationalLevel));
+            return $educationalLevel;
+        }
+        if (preg_match("/^[1-9]$/", $label)) {
+            $educationalLevel = sprintf("0%s", strtoupper($label));
+            $this->var_error_log(sprintf("%s,\t\t[L] row[%d, %d] label matched '/^[1-9]$/'.  Converted to educationalLevel %s", $msg, $row, $column, $educationalLevel));
+            return $educationalLevel;
+        }
+        if (preg_match("/^(1[0|1|2])$/", $label)) {
+            $educationalLevel = sprintf("%s", $label);
+            $this->var_error_log(sprintf("%s,\t\t[L] row[%d, %d] label matched '/^(1[0|1|2])$'.  Converted educationalLevel from %d is %s", $msg, $row, $column, $educationalLevel));
+            return $educationalLevel;
+        }
+        throw new \RuntimeException(sprintf("%s\t\t[L] row[%d, %d] unknown format label %s", $msg, $row, $column, $label));
+    }
 
     private function saveDocument(Worksheet $sheet): LsDoc
     {
