@@ -7,9 +7,6 @@ use Doctrine\DBAL\Schema\Schema;
 
 class Version20160201010100 extends AbstractMigration
 {
-    /**
-     * @param Schema $schema
-     */
     public function up(Schema $schema): void
     {
 
@@ -31,9 +28,7 @@ CREATE TABLE auth_session (
 
     }
 
-    /**
-     * @param Schema $schema
-     */
+
     public function down(Schema $schema): void
     {
         if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {

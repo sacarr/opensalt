@@ -11,9 +11,6 @@ use Symfony\Component\Cache\Adapter\PdoAdapter;
  */
 class Version20170504134137 extends AbstractMigration
 {
-    /**
-     * @param Schema $schema
-     */
     public function up(Schema $schema): void
     {
         if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
@@ -28,9 +25,7 @@ class Version20170504134137 extends AbstractMigration
         $this->addSql('/* no additional SQL required */');
     }
 
-    /**
-     * @param Schema $schema
-     */
+
     public function down(Schema $schema): void
     {
         if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {

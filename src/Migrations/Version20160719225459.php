@@ -10,9 +10,6 @@ use Doctrine\DBAL\Schema\Schema;
  */
 class Version20160719225459 extends AbstractMigration
 {
-    /**
-     * @param Schema $schema
-     */
     public function up(Schema $schema): void
     {
         if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
@@ -41,9 +38,7 @@ ALTER TABLE ls_association
         $this->addSql('CREATE INDEX IDX_A84022D4A002CDB7 ON ls_association (destination_lsitem_id)');
     }
 
-    /**
-     * @param Schema $schema
-     */
+
     public function down(Schema $schema): void
     {
         if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {

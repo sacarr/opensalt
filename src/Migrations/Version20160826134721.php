@@ -10,9 +10,6 @@ use Doctrine\DBAL\Schema\Schema;
  */
 class Version20160826134721 extends AbstractMigration
 {
-    /**
-     * @param Schema $schema
-     */
     public function up(Schema $schema): void
     {
         if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
@@ -26,9 +23,7 @@ class Version20160826134721 extends AbstractMigration
         $this->addSql('ALTER TABLE ls_item ADD extra LONGTEXT DEFAULT NULL COMMENT \'(DC2Type:json_array)\'');
     }
 
-    /**
-     * @param Schema $schema
-     */
+
     public function down(Schema $schema): void
     {
         if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {

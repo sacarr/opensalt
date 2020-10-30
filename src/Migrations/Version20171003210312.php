@@ -10,9 +10,6 @@ use Doctrine\DBAL\Schema\Schema;
  */
 class Version20171003210312 extends AbstractMigration
 {
-    /**
-     * @param Schema $schema
-     */
     public function up(Schema $schema): void
     {
         if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
@@ -28,9 +25,7 @@ class Version20171003210312 extends AbstractMigration
         $this->addSql('ALTER TABLE salt_comment ADD CONSTRAINT FK_5AD1C6CC727ACA70 FOREIGN KEY (parent_id) REFERENCES salt_comment (id) ON DELETE CASCADE');
     }
 
-    /**
-     * @param Schema $schema
-     */
+
     public function down(Schema $schema): void
     {
         if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {

@@ -10,9 +10,6 @@ use Doctrine\DBAL\Schema\Schema;
  */
 class Version20170201212306 extends AbstractMigration
 {
-    /**
-     * @param Schema $schema
-     */
     public function up(Schema $schema): void
     {
         if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
@@ -26,9 +23,7 @@ class Version20170201212306 extends AbstractMigration
         $this->addSql('ALTER TABLE ls_item CHANGE list_enum_in_source list_enum_in_source VARCHAR(20) DEFAULT NULL COLLATE utf8_unicode_ci');
     }
 
-    /**
-     * @param Schema $schema
-     */
+
     public function down(Schema $schema): void
     {
         if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {

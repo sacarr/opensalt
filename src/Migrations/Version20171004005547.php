@@ -7,9 +7,6 @@ use Doctrine\DBAL\Schema\Schema;
 
 class Version20171004005547 extends AbstractMigration
 {
-    /**
-     * @param Schema $schema
-     */
     public function up(Schema $schema): void
     {
         if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
@@ -62,9 +59,7 @@ ALTER DATABASE {$dbName} CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
         }
     }
 
-    /**
-     * @param Schema $schema
-     */
+
     public function down(Schema $schema): void
     {
         if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {

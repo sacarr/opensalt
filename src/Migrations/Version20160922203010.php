@@ -10,9 +10,6 @@ use Doctrine\DBAL\Schema\Schema;
  */
 class Version20160922203010 extends AbstractMigration
 {
-    /**
-     * @param Schema $schema
-     */
     public function up(Schema $schema): void
     {
       if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
@@ -100,9 +97,7 @@ UPDATE ls_item
         ");
     }
 
-    /**
-     * @param Schema $schema
-     */
+
     public function down(Schema $schema): void
     {
       if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {

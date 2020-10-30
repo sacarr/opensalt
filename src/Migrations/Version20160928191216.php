@@ -8,9 +8,6 @@ use Ramsey\Uuid\Uuid;
 
 class Version20160928191216 extends AbstractMigration
 {
-    /**
-     * @param Schema $schema
-     */
     public function up(Schema $schema): void
     {
       if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
@@ -84,9 +81,7 @@ xENDx;
         $this->connection->commit();
     }
 
-    /**
-     * @param Schema $schema
-     */
+
     public function down(Schema $schema): void
     {
       if ( $this->connection->getDatabasePlatform()->getName() == 'postgresql') {
