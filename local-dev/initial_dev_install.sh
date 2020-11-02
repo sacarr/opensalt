@@ -5,13 +5,15 @@ cd $(dirname $0)/..
 
 printf "\n\n"
 while test ${ready:-false} != true; do
-  while test ${DATABASE_BRAND:-not_set} != "mysql" && test ${DATABASE_BRAND:-not_set} != "postgres" && test ${DATABASE_BRAND:-not_set} != "pgsql"; do
-    if test ${DATABASE_BRAND:-not_set} != "not_set" && ( test ${DATABASE_BRAND:-not_set} != "mysql" && test ${DATABASE_BRAND:-not_set} != "postgres" && test ${DATABASE_BRAND:-not_set} != "pgsql"); then {
+  while test ${DATABASE_BRAND:-not_set} != "mysql" && test ${DATABASE_BRAND:-not_set} != "postgres"; do
+    if test ${DATABASE_BRAND:-not_set} != "not_set" && ( test ${DATABASE_BRAND} != "mysql" && test ${DATABASE_BRAND} != "postgres" ); then {
       printf "\n\t${DATABASE_BRAND} is not supported\n"
     } fi
-    printf "\tSelect a database platform [mysql, postgres(pgsql)]: "
-    read DATABASE_BRAND
+    read -e -p "Select a database platform [mysql, postgres (default postgres)]: " DATABASE_BRAND
     DATABASE_BRAND=`echo ${DATABASE_BRAND} | tr '[:upper:]' '[:lower:]'`
+    if test `echo $DATABASE_BRAND|wc -c` -eq 1; then
+      DATABASE_BRAND="postgres"
+    fi
   done
   printf "\n\n"
   printf "\tConfiguring project for ${DATABASE_BRAND}\n\n"
@@ -22,7 +24,7 @@ while test ${ready:-false} != true; do
   rm -f docker/.env ./.env
   cp docker/.env.dist docker/.env && ln -sf docker/.env .env
 
-  if test ${DATABASE_BRAND} == "postgres" || test ${DATABASE_BRAND} == "pgsql"; then {
+  if test ${DATABASE_BRAND} == "postgres"; then {
   cat <<p.g.s.q.l >>docker/.env
 
 # [ Container ]
@@ -101,20 +103,25 @@ m.y.s.q.l
   done
   printf "\t  Done\n"
 
-  printf "\n\tReady to build? [yes, no]: "
-  read ready
+   read -e -p "Select a database platform [mysql, postgres (default postgres)]: " DATABASE_BRAND
+    DATABASE_BRAND=`echo ${DATABASE_BRAND} | tr '[:upper:]' '[:lower:]'`
+    if test `echo $DATABASE_BRAND|wc -c` -eq 1; then
+      DATABASE_BRAND="postgres"
+    fi
+  read -e, -p "Ready to build? [yes, no] (default yes): " ready
   ready=`echo ${ready} | tr '[:upper:]' '[:lower:]'| head -c 1`
-  if test ${ready} == "y"; then {
+  if test `echo ${ready}|wc -c` -eq 1; then
     ready=true
-  } else {
+  elif test ${ready} == "y"; then
+    ready=true
+  else
     ready=false
-  } fi
+  fi
 done
 
 # Start docker containers
 printf "\n\n\t4. Starting containers\n\n"
-make up
-printf " Done\n\n"
+make up && printf " Done\n\n"
 
 # Install libraries, create css and js files, and setup database
 printf "\t5. Install PHP modules, Node.JS modules and Database schema\n\n"
